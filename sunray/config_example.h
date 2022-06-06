@@ -202,6 +202,9 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 // certain time (normally a few seconds) and the mower will try again and set a virtual obstacle after too many tries
 // On the other hand, the overload detection will detect situations the fault signal cannot detect: slightly higher current for a longer time 
 
+// choose ticks per cutting disc revolution :
+#define MOW_TICKS_PER_REVOLUTION  6 / 2   // odometry ticks per cutting disc revolution 
+
 #define MOW_OVERLOAD_CURRENT 2.0    // mowing motor overload current (amps)
 
 // should the direction of mowing motor toggle each start? (yes: true, no: false)
@@ -617,4 +620,3 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #ifdef BNO055
   #define MPU9250   // just to make mpu driver happy to compile something
 #endif
-

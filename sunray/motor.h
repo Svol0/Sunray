@@ -53,6 +53,9 @@ class Motor {
     float motorsSenseLP; // all motors current (amps, low-pass)
     float motorLeftSenseLPNorm; 
     float motorRightSenseLPNorm;
+    float motorLeftRpmCurrLP;
+    float motorRightRpmCurrLP;
+    float motorMowRpmCurrLP;
     unsigned long motorMowSpinUpTime;
     void begin();
     void run();      
@@ -68,9 +71,6 @@ class Motor {
     float motorLeftRpmCurr;
     float motorRightRpmCurr;
     float motorMowRpmCurr;    
-    float motorLeftRpmCurrLP;
-    float motorRightRpmCurrLP;    
-    float motorMowRpmCurrLP;    
     float motorLeftRpmLast;
     float motorRightRpmLast;
     bool motorMowForwardSet; 

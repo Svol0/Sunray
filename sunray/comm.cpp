@@ -559,6 +559,12 @@ void cmdSummary(){
   s += motor.motorLeftSenseLP; // Motorstrom Antriebsmotor links
   s += ",";
   s += motor.motorMowSenseLP; // Motorstrom Mähmotor
+  s += ",";
+  s += motor.motorRightRpmCurrLP; // Abtriebsdrehzahl Antriebsmotor rechts
+  s += ",";
+  s += motor.motorLeftRpmCurrLP; // Abtriebsdrehzahl Antriebsmotor links
+  s += ",";
+  s += motor.motorMowRpmCurrLP; // Abtriebsdrehzahl Mähmotor
   cmdAnswer(s);  
 }
 
