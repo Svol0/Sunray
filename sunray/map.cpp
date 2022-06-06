@@ -21,7 +21,7 @@ Point *CHECK_POINT = (Point*)0x12345678;  // just some arbitray address for corr
 
 unsigned long memoryCorruptions = 0;        
 unsigned long memoryAllocErrors = 0;
-
+bool reverseTillGpsRebootPoint  = false;
 
 Point::Point(){
   init();
@@ -896,11 +896,17 @@ bool Map::retryDocking(float stateX, float stateY){
   if (!shouldDock) {
     CONSOLE.println("ERROR retryDocking: not docking!");
     return false;  
-  }  
+  }
   if (shouldRetryDock) {
     CONSOLE.println("ERROR retryDocking: already retrying!");   
     return false;
-  } 
+  }
+  // Svol0: if a specific docking point for gps-reboot is configured, mower will return to this point, if retryDocking is triggered
+  if (((dockPointsIdx) > (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){                                                                 
+      reverseTillGpsRebootPoint = true;
+      CONSOLE.print("Map::retryDocking: Go back to GPS-Reboot point: ");   
+      CONSOLE.println(dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT));
+  }
   if (dockPointsIdx > 0) dockPointsIdx--;    
   shouldRetryDock = true;
   trackReverse = true;
@@ -1173,23 +1179,42 @@ bool Map::nextDockPoint(bool sim){
         lastTargetPoint.assign(targetPoint);
         trackSlow = true; // Svol0:
         if (dockPointsIdx == 0) {
-          CONSOLE.println("nextDockPoint: shouldRetryDock=false");
+          CONSOLE.println("nextDockPoint: shouldRetryDock=false; dockPointsIdx = 0");
           shouldRetryDock=false;
+          reverseTillGpsRebootPoint = false;
         }
-        if (shouldRetryDock) {
+        if (shouldRetryDock || reverseTillGpsRebootPoint) {
           CONSOLE.println("nextDockPoint: shouldRetryDock=true");
-          dockPointsIdx--;
-          trackReverse = true;
-          // Svol0: if dockingpoint for GPS-reboot is reached, the docking should start from here again
-          if (((dockPointsIdx + 2) == (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT)) && DOCK_POINT_GPS_REBOOT != 0)){
-//            dockGpsRebootState = 1;                    // activate gps-reboot in robot.cpp
-              CONSOLE.print("map: nextDockPoint: shouldRetryDock= false at point: ");
-              CONSOLE.println(dockPointsIdx);
-              shouldRetryDock=false;      
+          // Svol0:
+          if (reverseTillGpsRebootPoint) {
+            if (((dockPointsIdx-2) == (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){
+              dockGpsRebootState = 1;                    // activate gps-reboot in robot.cpp
+              CONSOLE.print("map: gps-reboot by retry docking at dockingpoint : ");
+              CONSOLE.print(dockPointsIdx);
+              CONSOLE.print(" DOCK_POINT_GPS_REBOOT: ");
+              CONSOLE.println(dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT));
+              reverseTillGpsRebootPoint = false;
+              dockPointsIdx++;
+            }
           }
+          dockPointsIdx--;
+          trackReverse = true;          
+/*
+          if (((dockPointsIdx) > (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){                                                                 
+            reverseTillGpsRebootPoint = true;
+          } else reverseTillGpsRebootPoint = false;        
+*/        
         } else {
           dockPointsIdx++; 
           trackReverse = false;
+          
+          CONSOLE.print("map: nextDockPoint: dockPointsIdx: ");
+          CONSOLE.print(dockPointsIdx);
+          CONSOLE.print(" dockPoints.numPoints: ");
+          CONSOLE.print(dockPoints.numPoints);
+          CONSOLE.print(" trackReverse: ");
+          CONSOLE.println(trackReverse);
+
           // Svol0: only the last dockingpoints (value from "DOCK_SLOW_ONLY_LAST_POINTS") will be done with slow speed
           if ((dockPoints.numPoints > abs(DOCK_SLOW_ONLY_LAST_POINTS)) && 
           (dockPointsIdx < (dockPoints.numPoints - abs(DOCK_SLOW_ONLY_LAST_POINTS))) && (DOCK_SLOW_ONLY_LAST_POINTS != 0) ){
