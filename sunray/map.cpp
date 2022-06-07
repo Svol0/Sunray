@@ -798,6 +798,9 @@ if ((dockPointsIdx+1) == dockPoints.numPoints){
       break;
     case WAY_MOW:
       allowDockLastPointWithoutGPS = false; // Svol0:
+      trackReverse = false;             
+      trackSlow = false;
+
       if (mowPointsIdx < mowPoints.numPoints){
         targetPoint.assign( mowPoints.points[mowPointsIdx] );
       }
@@ -902,7 +905,7 @@ bool Map::retryDocking(float stateX, float stateY){
     return false;
   }
   // Svol0: if a specific docking point for gps-reboot is configured, mower will return to this point, if retryDocking is triggered
-  if (((dockPointsIdx) > (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){                                                                 
+  if (((dockPointsIdx) >= (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){                                                                 
       reverseTillGpsRebootPoint = true;
       CONSOLE.print("Map::retryDocking: Go back to GPS-Reboot point: ");   
       CONSOLE.println(dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT));
@@ -1187,7 +1190,7 @@ bool Map::nextDockPoint(bool sim){
           CONSOLE.println("nextDockPoint: shouldRetryDock=true");
           // Svol0:
           if (reverseTillGpsRebootPoint) {
-            if (((dockPointsIdx-2) == (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){
+            if (((dockPointsIdx+1) == (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){
               dockGpsRebootState = 1;                    // activate gps-reboot in robot.cpp
               CONSOLE.print("map: gps-reboot by retry docking at dockingpoint : ");
               CONSOLE.print(dockPointsIdx);
@@ -1197,13 +1200,39 @@ bool Map::nextDockPoint(bool sim){
               dockPointsIdx++;
             }
           }
+          // Svol0: if going reverse and mower is between docking station and "DOCK_POINT_GPS_REBOOT", this will be done without gps support
+          if (((dockPointsIdx+1) > (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){                                                                 
+            if (!sim) useGPSfixForPosEstimation = !DOCK_IGNORE_GPS;
+            if (!sim) useGPSfixForDeltaEstimation = !DOCK_IGNORE_GPS;
+            CONSOLE.print("Map::nextDockPoint - gps-fix not needed for reverse? 0=no/1=yes :");
+            CONSOLE.print(DOCK_IGNORE_GPS);
+            CONSOLE.print(" | dockPointsIdx: ");
+            CONSOLE.print(dockPointsIdx);
+            CONSOLE.print(" / ");
+            CONSOLE.println(dockPoints.numPoints);
+
+
+          } else {
+            if (!sim) useGPSfixForPosEstimation = true;
+            if (!sim) useGPSfixForDeltaEstimation = true;
+            CONSOLE.print("Map::nextDockPoint - gps-fix needed for reverse!");
+            CONSOLE.print(DOCK_IGNORE_GPS);
+            CONSOLE.print(" | dockPointsIdx: ");
+            CONSOLE.print(dockPointsIdx);
+            CONSOLE.print(" / ");
+            CONSOLE.println(dockPoints.numPoints);
+
+          }
+          
           dockPointsIdx--;
+          trackSlow = false;
           trackReverse = true;          
 /*
           if (((dockPointsIdx) > (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){                                                                 
             reverseTillGpsRebootPoint = true;
           } else reverseTillGpsRebootPoint = false;        
 */        
+
         } else {
           dockPointsIdx++; 
           trackReverse = false;
@@ -1220,10 +1249,10 @@ bool Map::nextDockPoint(bool sim){
           (dockPointsIdx < (dockPoints.numPoints - abs(DOCK_SLOW_ONLY_LAST_POINTS))) && (DOCK_SLOW_ONLY_LAST_POINTS != 0) ){
             if (!sim) trackSlow = false;
           }
+          if (!sim) useGPSfixForPosEstimation = true;
+          if (!sim) useGPSfixForDeltaEstimation = true;
         }
       }
-      if (!sim) useGPSfixForPosEstimation = true;
-      if (!sim) useGPSfixForDeltaEstimation = true;
       if (!sim) useGPSfloatForPosEstimation = false;    
       if (!sim) useGPSfloatForDeltaEstimation = false;    
       if (!sim) useIMU = true;     // false      
