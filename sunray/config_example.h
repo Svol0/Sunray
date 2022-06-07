@@ -1,4 +1,4 @@
-// Ardumower Sunray 
+// Ardumower Sunray V1.0.267 mit Joystickspeed und SpeedParameter installiert.
 // Copyright (c) 2013-2020 by Alexander Grau, Grau GmbH
 // Licensed GPLv3 for open source use
 // or Grau GmbH Commercial License for commercial use (http://grauonline.de/cms2/?page_id=153)
@@ -139,6 +139,18 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 
 // #define TICKS_PER_REVOLUTION  304     // odometry ticks per wheel revolution (RM18)
 
+//Speeds/Time for different movement operations
+#define MOW_SPINUPTIME          5000 //Adds time to rotate mowingblades before starting moving (ms)
+#define OVERLOADSPEED           0.15 //m/s
+#define ROTATETOTARGETSPEED     1.0 //0.5=29degree/sec
+#define TRACKSLOWSPEED          0.10 //m/s
+#define APPROACHWAYPOINTSPEED   0.15 //m/s
+#define FLOATSPEED              0.15 //m/s
+#define SONARSPEED              0.10 //m/s
+#define DOCKANGULARSPEED        0.25 //rad/s
+#define OBSTACLEAVOIDANCESPEED  0.15 //m/s
+#define MOTOR_MAX_SPEED         0.50          // limitation for setSpeed value from Sunray-App (0,01 to 0,59m/sec are possible) to avoid to high speed setting by mistake   // SOEW_NEU
+#define MOTOR_MIN_SPEED         0.05          // minimal driving speed
 
 // ----- gear motors --------------------------------------------------
 // for brushless motors, study the sections (drivers, adapter, protection etc.) in the Wiki (https://wiki.ardumower.de/index.php?title=DIY_Brushless_Driver_Board)
@@ -157,6 +169,12 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 
 //#define USE_LINEAR_SPEED_RAMP  true      // use a speed ramp for the linear speed
 #define USE_LINEAR_SPEED_RAMP  false      // do not use a speed ramp 
+
+// It is possible to navigate the mower by touch-joystick in sunray-app. In some cases it could be neccessary to navigate the mower very soften, especially when your connected by
+// wifi to the mower. If parameter is set to true, the speed value from app will be used for maximum speed by joystick control. To navigate soften, 
+// change the speed slider for example to 0.10. If you need to let the mower drive long distance without accurate positioning change the speed slider to higher values. 
+#define USE_SETSPEED_FOR_APPJOYSTICK true  // setting of setSpeed is used for maximum speed of mower control with joystick in sunray-app.
+//#define USE_SETSPEED_FOR_APPJOYSTICK false  // mower will drive at a maximum speed of 0.33m/sec by control with joystick in sunray-app.
 
 // motor speed control (PID coefficients) - these values are tuned for Ardumower motors
 // general information about PID controllers: https://wiki.ardumower.de/index.php?title=PID_control
@@ -295,6 +313,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 // #define BUMPER_ENABLE true
 #define BUMPER_ENABLE false
 #define BUMPER_DEADTIME 1000  // linear motion dead-time (ms) after bumper is allowed to trigger
+#define BUMPER_MAX_TRIGGER_TIME 30         // if bumpersensor stays permanent triggered mower will stop with bumper error (time in seconds; 0 = disabled)
 
 
 // ----- battery charging current measurement (INA169) --------------

@@ -127,8 +127,11 @@ void cmdControl(){
           }
       } else if (counter == 2){                                      
           if (intValue >= 0) op = intValue; 
-      } else if (counter == 3){                                      
-          if (floatValue >= 0) setSpeed = floatValue; 
+      } else if (counter == 3){
+				if (floatValue >= 0) {
+					setSpeed = floatValue; 
+					if (setSpeed > MOTOR_MAX_SPEED) setSpeed = MOTOR_MAX_SPEED;   // limitation for setSpeed (please see "MOTOR_MAX_SPEED" in config.h) //SOew
+				}
       } else if (counter == 4){                                      
           if (intValue >= 0) fixTimeout = intValue; 
       } else if (counter == 5){
@@ -180,12 +183,22 @@ void cmdMotor(){
     //Serial.println(ch);
     if ((ch == ',') || (idx == cmd.length()-1)){
       float value = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toFloat();
-      if (counter == 1){                            
-          linear = value;
-      } else if (counter == 2){
-          angular = value;
-      } 
-      counter++;
+			if (counter == 1){
+				linear = value;
+				if (USE_SETSPEED_FOR_APPJOYSTICK) {	// Svol0 -> see description in config.h at "USE_SETSPEED_FOR_APPJOYSTICK"
+					// map the manual control value for linear speed from range 0.00 till 0.33 to the range of 0.00 till setSpeed but at least 0.10
+					linear = map((value*100),0,33,0,max(setSpeed*100,10));
+					linear = linear / 100;
+				}
+			} else if (counter == 2){
+				angular = value;
+				if (USE_SETSPEED_FOR_APPJOYSTICK) {
+					// map the manual control value for angular speed from range 0.00 till 0.50 to the range of 0.00 till setSpeed but at least 0.10
+					angular = map((value*100),0,50,0,max(setSpeed*151,15));
+					angular = angular / 100;
+				}
+			}
+			counter++;
       lastCommaIdx = idx;
     }    
   }      
@@ -538,6 +551,14 @@ void cmdSummary(){
   s += maps.mapCRC;
   s += ",";
   s += lateralError;
+  s += ",";
+  s += stateTemp; // Aktuelle Temperatur
+  s += ",";
+  s += motor.motorRightSenseLP; // Motorstrom Antriebsmotor rechts
+  s += ",";
+  s += motor.motorLeftSenseLP; // Motorstrom Antriebsmotor links
+  s += ",";
+  s += motor.motorMowSenseLP; // Motorstrom Mähmotor
   cmdAnswer(s);  
 }
 

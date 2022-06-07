@@ -143,6 +143,9 @@ unsigned long nextTempTime = 0;
 unsigned long imuDataTimeout = 0;
 unsigned long nextSaveTime = 0;
 
+unsigned long bumperStayActivTime = 0;    // duration, the bumper stays triggered
+unsigned long lastCallBumperObstacle = 0; // last call for bumper.obstacle
+
 bool wifiFound = false;
 char ssid[] = WIFI_SSID;      // your network SSID (name)
 char pass[] = WIFI_PASS;        // your network password
@@ -356,6 +359,28 @@ void outputConfig(){
   CONSOLE.println(ENABLE_ODOMETRY_ERROR_DETECTION);
   CONSOLE.print("TICKS_PER_REVOLUTION: ");
   CONSOLE.println(TICKS_PER_REVOLUTION);
+  CONSOLE.print("MOW_SPINUPTIME: ");
+  CONSOLE.println(MOW_SPINUPTIME);
+  CONSOLE.print("OVERLOADSPEED: ");
+  CONSOLE.println(OVERLOADSPEED);
+  CONSOLE.print("ROTATETOTARGETSPEED: ");
+  CONSOLE.println(ROTATETOTARGETSPEED);
+  CONSOLE.print("TRACKSLOWSPEED: ");
+  CONSOLE.println(TRACKSLOWSPEED);
+  CONSOLE.print("APPROACHWAYPOINTSPEED: ");
+  CONSOLE.println(APPROACHWAYPOINTSPEED);
+  CONSOLE.print("FLOATSPEED: ");
+  CONSOLE.println(FLOATSPEED);
+  CONSOLE.print("SONARSPEED: ");
+  CONSOLE.println(SONARSPEED);
+  CONSOLE.print("DOCKANGULARSPEED: ");
+  CONSOLE.println(DOCKANGULARSPEED);
+  CONSOLE.print("OBSTACLEAVOIDANCESPEED: ");
+  CONSOLE.println(OBSTACLEAVOIDANCESPEED);
+  CONSOLE.print("MOTOR_MAX_SPEED: ");
+  CONSOLE.println(MOTOR_MAX_SPEED);
+  CONSOLE.print("MOTOR_MIN_SPEED: ");
+  CONSOLE.println(MOTOR_MIN_SPEED);
   #ifdef MOTOR_DRIVER_BRUSHLESS
     CONSOLE.println("MOTOR_DRIVER_BRUSHLESS");
   #endif
@@ -385,6 +410,8 @@ void outputConfig(){
   CONSOLE.println(MOTOR_OVERLOAD_CURRENT);
   CONSOLE.print("USE_LINEAR_SPEED_RAMP: ");
   CONSOLE.println(USE_LINEAR_SPEED_RAMP);
+  CONSOLE.print("USE_SETSPEED_FOR_APPJOYSTICK: ");
+  CONSOLE.println(USE_SETSPEED_FOR_APPJOYSTICK);
   CONSOLE.print("MOTOR_PID_KP: ");
   CONSOLE.println(MOTOR_PID_KP);
   CONSOLE.print("MOTOR_PID_KI: ");
@@ -420,6 +447,10 @@ void outputConfig(){
   CONSOLE.println(RAIN_ENABLE);
   CONSOLE.print("BUMPER_ENABLE: ");
   CONSOLE.println(BUMPER_ENABLE);
+  CONSOLE.print("BUMPER_DEADTIME: ");
+  CONSOLE.println(BUMPER_DEADTIME);
+  CONSOLE.print("BUMPER_MAX_TRIGGER_TIME: ");
+  CONSOLE.println(BUMPER_MAX_TRIGGER_TIME);
   CONSOLE.print("CURRENT_FACTOR: ");
   CONSOLE.println(CURRENT_FACTOR);
   CONSOLE.print("GO_HOME_VOLTAGE: ");
@@ -468,6 +499,10 @@ void outputConfig(){
   CONSOLE.println(DOCKING_STATION);
   CONSOLE.print("DOCK_IGNORE_GPS: ");
   CONSOLE.println(DOCK_IGNORE_GPS);
+  CONSOLE.print("DOCK_SLOW_ONLY_LAST_POINTS: ");
+  CONSOLE.println(DOCK_SLOW_ONLY_LAST_POINTS);
+  CONSOLE.print("DOCK_POINT_GPS_REBOOT: ");
+  CONSOLE.println(DOCK_POINT_GPS_REBOOT);  
   CONSOLE.print("DOCK_AUTO_START: ");
   CONSOLE.println(DOCK_AUTO_START);
   CONSOLE.print("TARGET_REACHED_TOLERANCE: ");
@@ -729,7 +764,22 @@ bool detectObstacle(){
       triggerObstacle();    
       return true;
     }
+    // check if bumper stays triggered for a long time periode (maybe blocked)
+    if (bumper.obstacle() && (BUMPER_MAX_TRIGGER_TIME > 0)){
+      if ((abs(motor.linearSpeedSet) >= MOTOR_MIN_SPEED) || (abs(motor.angularSpeedSet) >= MOTOR_MIN_SPEED)) { // if no movement, bumperStayActivTime paused
+        bumperStayActivTime = bumperStayActivTime + (millis()-lastCallBumperObstacle);
+      }
+      if ((bumperStayActivTime) > (BUMPER_MAX_TRIGGER_TIME * 1000)){ // maximum trigger time reached -> set error
+        if (stateOp != OP_ERROR){
+          stateSensor = SENS_BUMPER;
+          CONSOLE.println("ERROR BUMPER BLOCKED");
+          setOperation(OP_ERROR);
+        }
+      }
+    } else bumperStayActivTime = 0;
+    lastCallBumperObstacle = millis();
   }
+  
   if (sonar.obstacle() && (maps.wayMode != WAY_DOCK)){
     CONSOLE.println("sonar obstacle!");    
     statMowSonarCounter++;
@@ -1005,4 +1055,3 @@ void setOperation(OperationType op, bool allowRepeat, bool initiatedbyOperator){
   activeOp->changeOperationType(stateOp, initiatedbyOperator);
   saveState();
 }
-
