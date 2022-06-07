@@ -8,6 +8,7 @@
 #include "helper.h"
 #include "robot.h"
 #include "Arduino.h"
+#include "LineTracker.h"
 
 
 
@@ -27,6 +28,13 @@ void Motor::begin() {
   pwmSpeedOffset = 1.0;
   mowMotorCurrentAverage = MOWMOTOR_CURRENT_FACTOR * MOW_OVERLOAD_CURRENT;
   currentFactor = MOWMOTOR_CURRENT_FACTOR;
+
+  // calc ramp steps
+  accStep = ((float)MOTOR_MAX_SPEED * 20) / (float)ACC_RAMP;
+  decStep = ((float)MOTOR_MAX_SPEED *20) / (float)DEC_RAMP;
+  lastLinearSetTime = millis();
+  calcStopWay       = 0;
+
 
   //ticksPerRevolution = 1060/2;
   ticksPerRevolution = TICKS_PER_REVOLUTION;
@@ -115,7 +123,7 @@ void Motor::begin() {
   setLinearAngularSpeedTimeoutActive = false;  
   setLinearAngularSpeedTimeout = 0;
   motorMowSpinUpTime = 0;
-}
+  }
 
 
 void Motor::speedPWM ( int pwmLeft, int pwmRight, int pwmMow )
@@ -235,7 +243,42 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
    setLinearAngularSpeedTimeout = millis() + 1000;
    setLinearAngularSpeedTimeoutActive = true;
    if ((activateLinearSpeedRamp) && (useLinearRamp)) {
-     linearSpeedSet = 0.95 * linearSpeedSet + 0.05 * linear;
+   //  linearSpeedSet = 0.95 * linearSpeedSet + 0.05 * linear;
+
+      if (millis() >= lastLinearSetTime) {
+        calcStopWay = (linearSpeedSet * DEC_RAMP) / 2000;
+        CONSOLE.print("setLinearAngularSpeed: last call: ");
+        CONSOLE.print(millis() - lastLinearSetTime);
+        CONSOLE.print(" calcStopWay: ");
+        CONSOLE.print(calcStopWay);
+        CONSOLE.print(" targetDist: ");
+        CONSOLE.print(targetDist);
+        CONSOLE.print("m | acc-step: ");
+        CONSOLE.print(accStep);
+        CONSOLE.print(" dec-step: ");
+        CONSOLE.print(decStep);
+        CONSOLE.print(" linearSpeedSet: ");
+        CONSOLE.print(linearSpeedSet);
+        CONSOLE.print(" linear: ");
+        CONSOLE.println(linear);
+
+        if (linear > 0) { // pos value
+          if (linearSpeedSet < 0) linearSpeedSet = linearSpeedSet + decStep; // noch pos
+          else if (linearSpeedSet < linear) linearSpeedSet = linearSpeedSet + accStep; // speed up
+          else linearSpeedSet = linearSpeedSet - decStep; // slow down
+        } else if (linear < 0) { // neg value
+            if (linearSpeedSet > 0) linearSpeedSet = linearSpeedSet - decStep; // noch pos
+            else if (linearSpeedSet < linear) linearSpeedSet = linearSpeedSet + decStep; 
+            else linearSpeedSet = linearSpeedSet - accStep;
+        } else { // linear = 0
+          if (linearSpeedSet > 0) linearSpeedSet = linearSpeedSet - decStep;
+          else linearSpeedSet = linearSpeedSet + decStep;
+        }
+        
+        lastLinearSetTime = lastLinearSetTime + 20;
+
+      }
+     
    } else {
      linearSpeedSet = linear;
    }

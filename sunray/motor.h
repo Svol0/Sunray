@@ -97,6 +97,10 @@ class Motor {
     bool checkFault();
     void sense();
     void dumpOdoTicks(int seconds);    
+    unsigned long lastLinearSetTime;  // Svol0: test
+    float calcStopWay;  // calculated distance for stop from actual speed
+    float accStep;
+    float decStep;
 };
 
 

@@ -20,6 +20,8 @@ float stanleyTrackingNormalP = STANLEY_CONTROL_P_NORMAL;
 float stanleyTrackingSlowK = STANLEY_CONTROL_K_SLOW;
 float stanleyTrackingSlowP = STANLEY_CONTROL_P_SLOW;    
 
+float targetDist = 0;
+
 float setSpeed = 0.1; // linear speed (m/s)
 
 bool rotateLeft = false;
@@ -54,7 +56,7 @@ void trackLine(bool runControl){
   trackerDiffDelta = distancePI(stateDelta, targetDelta);                         
   lateralError = distanceLineInfinite(stateX, stateY, lastTarget.x(), lastTarget.y(), target.x(), target.y());        
   float distToPath = distanceLine(stateX, stateY, lastTarget.x(), lastTarget.y(), target.x(), target.y());        
-  float targetDist = maps.distanceToTargetPoint(stateX, stateY);
+  targetDist = maps.distanceToTargetPoint(stateX, stateY);
   
   float lastTargetDist = maps.distanceToLastTargetPoint(stateX, stateY);  
 
