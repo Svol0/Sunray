@@ -246,9 +246,10 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
    //  linearSpeedSet = 0.95 * linearSpeedSet + 0.05 * linear;
 
       if (millis() >= lastLinearSetTime) {
+        if ((millis()+40) >= lastLinearSetTime) lastLinearSetTime = millis();
         calcStopWay = (linearSpeedSet * DEC_RAMP) / 2000;
         CONSOLE.print("setLinearAngularSpeed: last call: ");
-        CONSOLE.print(millis() - lastLinearSetTime);
+        CONSOLE.print((millis() - lastLinearSetTime));
         CONSOLE.print(" calcStopWay: ");
         CONSOLE.print(calcStopWay);
         CONSOLE.print(" targetDist: ");
