@@ -65,6 +65,8 @@ class Motor {
     void setLinearAngularSpeed(float linear, float angular, bool useLinearRamp = true);
     void setMowState(bool switchOn);   
     void stopImmediately(bool includeMowerMotor);
+    float calcStopWay;  // calculated distance for stop from actual speed
+
   protected: 
     float motorLeftRpmSet; // set speed
     float motorRightRpmSet;   
@@ -103,7 +105,6 @@ class Motor {
     void sense();
     void dumpOdoTicks(int seconds);    
     unsigned long lastLinearSetTime;  // Svol0: test
-    float calcStopWay;  // calculated distance for stop from actual speed
     float accStep;
     float decStep;
 };

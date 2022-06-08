@@ -10,7 +10,9 @@
 #include "Arduino.h"
 #include "LineTracker.h"
 
-
+unsigned long secTimer  = 0;
+int           countCallsPerSec  = 0;
+int lastCounts  = 0;
 
 
 void Motor::begin() {
@@ -242,12 +244,14 @@ void Motor::speedPWM ( int pwmLeft, int pwmRight, int pwmMow )
 void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRamp){
    setLinearAngularSpeedTimeout = millis() + 1000;
    setLinearAngularSpeedTimeoutActive = true;
+   
    if ((activateLinearSpeedRamp) && (useLinearRamp)) {
    //  linearSpeedSet = 0.95 * linearSpeedSet + 0.05 * linear;
 
       if (millis() >= lastLinearSetTime) {
         if ((millis()+40) >= lastLinearSetTime) lastLinearSetTime = millis();
         calcStopWay = (linearSpeedSet * DEC_RAMP) / 2000;
+/*
         CONSOLE.print("setLinearAngularSpeed: last call: ");
         CONSOLE.print((millis() - lastLinearSetTime));
         CONSOLE.print(" calcStopWay: ");
@@ -262,7 +266,7 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
         CONSOLE.print(linearSpeedSet);
         CONSOLE.print(" linear: ");
         CONSOLE.println(linear);
-
+*/
         if (linear > 0) { // pos value
           if (linearSpeedSet < 0) linearSpeedSet = linearSpeedSet + decStep; // noch pos
           else if (linearSpeedSet < linear) linearSpeedSet = linearSpeedSet + accStep; // speed up
@@ -275,15 +279,30 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
           if (linearSpeedSet > 0) linearSpeedSet = linearSpeedSet - decStep;
           else linearSpeedSet = linearSpeedSet + decStep;
         }
-        
+
+/*         
+        if (angular > 0) { // pos value
+          if (angularSpeedSet < 0) angularSpeedSet = angularSpeedSet + decStep; // noch pos
+          else if (angularSpeedSet < angular) angularSpeedSet = angularSpeedSet + decStep; // speed up
+          else angularSpeedSet = angularSpeedSet - decStep; // slow down
+        } else if (angular < 0) { // neg value
+            if (angularSpeedSet > 0) angularSpeedSet = angularSpeedSet - decStep; // noch pos
+            else if (angularSpeedSet < angular) angularSpeedSet = angularSpeedSet + decStep; 
+            else angularSpeedSet = angularSpeedSet - decStep;
+        } else { // linear = 0
+          if (angularSpeedSet > 0) angularSpeedSet = angularSpeedSet - decStep;
+          else angularSpeedSet = angularSpeedSet + decStep;
+        }
+*/        
         lastLinearSetTime = lastLinearSetTime + 20;
 
       }
      
    } else {
      linearSpeedSet = linear;
+//     angularSpeedSet = angular;
    }
-   angularSpeedSet = angular;   
+   angularSpeedSet = angular;
    float rspeed = linearSpeedSet + angularSpeedSet * (wheelBaseCm /100.0 /2);          
    float lspeed = linearSpeedSet - angularSpeedSet * (wheelBaseCm /100.0 /2);          
    // RPM = V / (2*PI*r) * 60

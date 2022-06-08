@@ -108,19 +108,27 @@ void trackLine(bool runControl){
 
     #if USE_LINEAR_SPEED_RAMP
       // linear speed ramp needs more distance to stop at high speeds
-      const float closeToTargetLimit = 1.0 * setSpeed;
+      const float closeToTargetLimit = motor.calcStopWay;
+      const float closeToTargetSpeed = MOTOR_MIN_SPEED;
+      const int closeToTargetTime = 1;
     #else
       const float closeToTargetLimit = 0.25;
+      const float closeToTargetSpeed = APPROACHWAYPOINTSPEED;
+      const int closeToTargetTime = 1000; //ms
     #endif
         
     if (maps.trackSlow) {
       // planner forces slow tracking (e.g. docking etc)
       linear = TRACKSLOWSPEED;  // see config.h           
     } else if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < closeToTargetLimit) && (!straight))   // approaching
-          || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 1000))                      // leaving  
+          || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + closeToTargetTime))                      // leaving  
        ) 
     {
-      linear = APPROACHWAYPOINTSPEED; // reduce speed when approaching/leaving waypoints          
+          CONSOLE.print("distanceToTargetPoint: ");
+          CONSOLE.print(maps.distanceToTargetPoint(stateX, stateY));
+          CONSOLE.print("calcStopWay: ");
+          CONSOLE.println(motor.calcStopWay);
+      linear = closeToTargetSpeed; // reduce speed when approaching/leaving waypoints          
     } 
     else {
       if (gps.solution == SOL_FLOAT)        

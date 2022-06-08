@@ -17,7 +17,11 @@ String EscapeReverseOp::name(){
 
 void EscapeReverseOp::begin(){
     // obstacle avoidance
-    driveReverseStopTime = millis() + 3000;                           
+    #if USE_LINEAR_SPEED_RAMP
+      driveReverseStopTime = millis() + ((450*200)/(OBSTACLEAVOIDANCESPEED * 100));  // t = s*2/v (450mm * 2 / OBSTACLEAVOIDANCESPEED )
+    #else
+      driveReverseStopTime = millis() + 3000;
+    #endif
 }
 
 

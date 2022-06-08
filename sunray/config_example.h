@@ -152,6 +152,9 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define MOTOR_MAX_SPEED         0.50          // limitation for setSpeed value from Sunray-App (0,01 to 0,59m/sec are possible) to avoid to high speed setting by mistake   // SOEW_NEU
 #define MOTOR_MIN_SPEED         0.05          // minimal driving speed
 
+#define ACC_RAMP                2000 //ms acceleration time from 0m/s to MOTOR_MAX_SPEED
+#define DEC_RAMP                1500 //ms deceleration time from MOTOR_MAX_SPEED to 0m/s
+
 // ----- gear motors --------------------------------------------------
 // for brushless motors, study the sections (drivers, adapter, protection etc.) in the Wiki (https://wiki.ardumower.de/index.php?title=DIY_Brushless_Driver_Board)
 //#define MOTOR_DRIVER_BRUSHLESS   1     // uncomment this for new brushless motor drivers
