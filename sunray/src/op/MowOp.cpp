@@ -101,7 +101,7 @@ void MowOp::onBatteryLowShouldDock(){
 
 void MowOp::onObstacle(){
     CONSOLE.println("triggerObstacle");      
-    motor.setLinearAngularSpeed(0,0, false);
+    motor.setLinearAngularSpeed(0,0, false);	// stop without linear ramp
     statMowObstacles++;      
     if (maps.isDocking()) {    
         if (maps.retryDocking(stateX, stateY)) {

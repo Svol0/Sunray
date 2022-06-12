@@ -782,18 +782,18 @@ void Map::run(){
     case WAY_DOCK:      
       if (dockPointsIdx < dockPoints.numPoints){
         targetPoint.assign( dockPoints.points[dockPointsIdx] );
-// Svol0:
-if ((dockPointsIdx+1) == dockPoints.numPoints){
-  if (DOCK_IGNORE_GPS == true) allowDockLastPointWithoutGPS = true;
-  if ((gps.solution == !SOL_FIXED) && (useGPSfixForPosEstimation == DOCK_IGNORE_GPS)){
-      useGPSfixForPosEstimation = !DOCK_IGNORE_GPS;
-      useGPSfixForDeltaEstimation = !DOCK_IGNORE_GPS;
-      CONSOLE.print("Map::run - gps.solution = ");
-      CONSOLE.print(gps.solution);
-      CONSOLE.print(" useGPSfixForPosEstimation = ");
-      CONSOLE.println(useGPSfixForPosEstimation);
-  }
-} else allowDockLastPointWithoutGPS = false;
+        // Svol0: if no gps fix possible at dockingstation, undock without gps support
+        if ((dockPointsIdx+1) == dockPoints.numPoints){
+          if (DOCK_IGNORE_GPS == true) allowDockLastPointWithoutGPS = true;
+          if ((gps.solution == !SOL_FIXED) && (useGPSfixForPosEstimation == DOCK_IGNORE_GPS)){
+              useGPSfixForPosEstimation = !DOCK_IGNORE_GPS;
+              useGPSfixForDeltaEstimation = !DOCK_IGNORE_GPS;
+              CONSOLE.print("Map::run - gps.solution = ");
+              CONSOLE.print(gps.solution);
+              CONSOLE.print(" useGPSfixForPosEstimation = ");
+              CONSOLE.println(useGPSfixForPosEstimation);
+          }
+        } else allowDockLastPointWithoutGPS = false;
       }
       break;
     case WAY_MOW:
@@ -1264,6 +1264,9 @@ bool Map::nextDockPoint(bool sim){
   } else if (shouldMow){
     // should undock
     if (dockPointsIdx > 0){
+      CONSOLE.print("!!! map: act dockPointsIdx :");
+      CONSOLE.println(dockPointsIdx);
+
       if (!sim) lastTargetPoint.assign(targetPoint);
       if (!sim) dockPointsIdx--;
 
@@ -1298,8 +1301,15 @@ bool Map::nextDockPoint(bool sim){
       // Svol0: activates gps-reboot by reaching specified dockingpoint (please see "DOCK_POINT_GPS_REBOOT" in config.h)
       if (((dockPointsIdx + 2) == (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT)) && DOCK_POINT_GPS_REBOOT != 0)){
         dockGpsRebootState = 1;                    // activate gps-reboot in robot.cpp
-        CONSOLE.print("map: gps-reboot by undocking at dockingpoint ");
+        CONSOLE.print("map: gps-reboot by undocking at dockingpoint :");
         CONSOLE.println(dockPointsIdx);
+      }
+
+      // Svol0: activate kidnap detection again
+      if ((dockPointsIdx == 0) || ((dockPointsIdx + 3) == (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT)) && DOCK_POINT_GPS_REBOOT != 0)) {
+        CONSOLE.print("map: enable kidnap detection at dockPointsIdx: ");
+        CONSOLE.println(dockPointsIdx);
+        blockKidnapByUndocking = false; // reset block Kidnap detection
       }
             
       return true;

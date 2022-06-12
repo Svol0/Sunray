@@ -279,6 +279,7 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
           if (linearSpeedSet > 0) linearSpeedSet = linearSpeedSet - decStep;
           else linearSpeedSet = linearSpeedSet + decStep;
         }
+        if ((linear == 0) && (linearSpeedSet != 0) && (fabs(linearSpeedSet) < decStep)) linearSpeedSet = 0;
 
 /*         
         if (angular > 0) { // pos value
@@ -294,7 +295,7 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
           else angularSpeedSet = angularSpeedSet + decStep;
         }
 */        
-        lastLinearSetTime = lastLinearSetTime + 20;
+        lastLinearSetTime = lastLinearSetTime + 20; // Rampe alle 20ms anpassen
 
       }
      

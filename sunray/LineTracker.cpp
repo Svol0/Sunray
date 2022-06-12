@@ -108,7 +108,9 @@ void trackLine(bool runControl){
 
     #if USE_LINEAR_SPEED_RAMP
       // linear speed ramp needs more distance to stop at high speeds
-      const float closeToTargetLimit = motor.calcStopWay;
+      float closeToTargetLimitOffset = map((motor.linearSpeedSet * 1000), MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, 10, 100);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
+      const float closeToTargetLimit = (motor.calcStopWay + (closeToTargetLimitOffset/1000));
+
       const float closeToTargetSpeed = MOTOR_MIN_SPEED;
       const int closeToTargetTime = 1;
     #else
@@ -124,10 +126,12 @@ void trackLine(bool runControl){
           || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + closeToTargetTime))                      // leaving  
        ) 
     {
+/*
           CONSOLE.print("distanceToTargetPoint: ");
           CONSOLE.print(maps.distanceToTargetPoint(stateX, stateY));
           CONSOLE.print("calcStopWay: ");
           CONSOLE.println(motor.calcStopWay);
+*/
       linear = closeToTargetSpeed; // reduce speed when approaching/leaving waypoints          
     } 
     else {
@@ -143,8 +147,8 @@ void trackLine(bool runControl){
     //Values need to be multiplied, because map() function does not work well with small range decimals
     float CurrSpeed = motor.linearSpeedSet * 1000;                                                    
     CurrSpeed = abs(CurrSpeed);
-    float k = map(CurrSpeed, MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, STANLEY_CONTROL_K_SLOW*1000, STANLEY_CONTROL_K_NORMAL*1000);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
-    float p = map(CurrSpeed, MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, STANLEY_CONTROL_P_SLOW*1000, STANLEY_CONTROL_P_NORMAL*1000);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
+    float k = map(CurrSpeed, MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, stanleyTrackingSlowK*1000, stanleyTrackingNormalK*1000);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
+    float p = map(CurrSpeed, MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, stanleyTrackingSlowP*1000, stanleyTrackingNormalP*1000);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
     k = k / 1000;                                                                                     
     p = p / 1000;                                                
     
@@ -192,7 +196,10 @@ void trackLine(bool runControl){
           warnDockWithoutGpsTrg = true;
         }
       } else {
-        CONSOLE.println("WARN: no gps solution!");
+        if (!warnDockWithoutGpsTrg){
+          CONSOLE.println("WARN: no gps solution!");
+          warnDockWithoutGpsTrg = true;
+        }
         activeOp->onGpsNoSignal();
       }
     }
@@ -223,23 +230,23 @@ void trackLine(bool runControl){
       
       case 1:
         // reboot gps to get new GPS fix
+        CONSOLE.println("LineTracker.cpp  dockGpsRebootState - start gps-reboot");
         gps.reboot();   // reboot gps to get new GPS fix
         dockGpsRebootTime = millis() + 5000; // load check timer for gps-fix with 5sec
         dockGpsRebootFixCounter = 0;
         dockGpsRebootState = 2;
-        CONSOLE.println("robot.cpp  dockGpsRebootState - start gps-reboot");
         break;
 
       case 2:
         // wait for gps-fix solution
         if (dockGpsRebootTime <= millis()){
           if (gps.solution == SOL_FIXED){
-            maps.setLastTargetPoint(stateX, stateY);  // Manipulate last target point to avoid "KIDNAP DETECT"
+       //     maps.setLastTargetPoint(stateX, stateY);  // Manipulate last target point to avoid "KIDNAP DETECT"
             dockGpsRebootState = 3;
             dockGpsRebootFeedbackTimer  = millis();
             dockGpsRebootTime = millis(); // load check timer for stable gps-fix
             dockGpsRebootDistGpsTrg = false; // reset trigger
-            CONSOLE.print("robot.cpp  dockGpsRebootState - got gps-fix after ");
+            CONSOLE.print("LineTracker.cpp  dockGpsRebootState - got gps-fix after ");
             CONSOLE.print(dockGpsRebootFixCounter);
             CONSOLE.println(" sec");     
           }
@@ -247,7 +254,7 @@ void trackLine(bool runControl){
             dockGpsRebootTime += 5000; // load check timer for gps-fix with 5sec
             dockGpsRebootFixCounter += 5;  // add 5 seconds
             if (!buzzer.isPlaying()) buzzer.sound(SND_TILT, true);
-            CONSOLE.print("robot.cpp  dockGpsRebootState - still no gps-fix after ");
+            CONSOLE.print("LineTracker.cpp  dockGpsRebootState - still no gps-fix after ");
             CONSOLE.print(dockGpsRebootFixCounter);
             CONSOLE.println(" sec");     
           }
@@ -258,14 +265,15 @@ void trackLine(bool runControl){
         // wait if gps-fix position stays stable for at least 20sec
         if ((gps.solution == SOL_FIXED) && (millis() - dockGpsRebootTime > 20000)){
           dockGpsRebootState      = 0; // finished
-          blockKidnapByUndocking  = false;  // enable Kidnap detection
-          CONSOLE.println("robot.cpp  dockGpsRebootState - gps-pos is stable; continue undocking;");
+     //     blockKidnapByUndocking  = false;  // enable Kidnap detection
+      //    maps.setLastTargetPoint(stateX, stateY);  // Manipulate last target point to avoid "KIDNAP DETECT"
+          CONSOLE.println("LineTracker.cpp  dockGpsRebootState - gps-pos is stable; continue undocking;");
         }
         if (gps.solution != SOL_FIXED) dockGpsRebootState = 2; // wait for gps-fix again
         if (dockGpsRebootDistGpsTrg == true){ // gps position is changing to much
           dockGpsRebootDistGpsTrg = false; // reset trigger
           dockGpsRebootTime = millis();
-          CONSOLE.print("robot.cpp  dockGpsRebootState - gps-pos is moving; timereset after");
+          CONSOLE.print("LineTracker.cpp  dockGpsRebootState - gps-pos is moving; timereset after");
           CONSOLE.print((millis() - dockGpsRebootTime));
           CONSOLE.println("msec");
           if (!buzzer.isPlaying()) buzzer.sound(SND_ERROR, true);               
@@ -302,6 +310,14 @@ void trackLine(bool runControl){
     motor.setLinearAngularSpeed(linear, angular);      
     if (detectLift()) mow = false; // in any case, turn off mower motor if lifted 
     motor.setMowState(mow);    
+  } else{
+    if (USE_LINEAR_SPEED_RAMP && (linear == 0) && (motor.linearSpeedSet != 0)){ // linearSpeedSet Rampe abbauen
+      CONSOLE.print("LineTracker.cpp  linear: ");
+      CONSOLE.print(linear);
+      CONSOLE.print(" linearSpeedSet: ");
+      CONSOLE.println(motor.linearSpeedSet);
+      motor.setLinearAngularSpeed(linear, angular);
+    }
   }
 
   if (targetReached){

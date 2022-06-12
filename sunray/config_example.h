@@ -1,4 +1,4 @@
-// Ardumower Sunray V1.0.267 mit Joystickspeed und SpeedParameter installiert.
+// Ardumower Sunray V1.0.274  with added GPS-Reboot by undocking; map setSpeed to app joystickspeed; speed parameters; new linear ramp
 // Copyright (c) 2013-2020 by Alexander Grau, Grau GmbH
 // Licensed GPLv3 for open source use
 // or Grau GmbH Commercial License for commercial use (http://grauonline.de/cms2/?page_id=153)
@@ -132,10 +132,11 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 // #define TICKS_PER_REVOLUTION  696 / 2    // odometry ticks per wheel revolution 
 
 // ...for the older 42mm diameter motor (white connector)  https://wiki.ardumower.de/images/d/d6/Ardumower_chassis_inside_ready.jpg
-#define TICKS_PER_REVOLUTION  1050 / 2    // odometry ticks per wheel revolution 
+//#define TICKS_PER_REVOLUTION  1050 / 2    // odometry ticks per wheel revolution 
 
 // ...for the brushless motor april 2021   https://wiki.ardumower.de/index.php?title=Datei:BLUnit.JPG
 //#define TICKS_PER_REVOLUTION  1300 / 2    // 1194/2  odometry ticks per wheel revolution
+#define TICKS_PER_REVOLUTION  1194 / 2    // 1194/2  odometry ticks per wheel revolution DURCH VERSUCHE ERMITTELT																												 																																			  
 
 // #define TICKS_PER_REVOLUTION  304     // odometry ticks per wheel revolution (RM18)
 
@@ -152,8 +153,8 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define MOTOR_MAX_SPEED         0.50          // limitation for setSpeed value from Sunray-App (0,01 to 0,59m/sec are possible) to avoid to high speed setting by mistake   // SOEW_NEU
 #define MOTOR_MIN_SPEED         0.05          // minimal driving speed
 
-#define ACC_RAMP                2000 //ms acceleration time from 0m/s to MOTOR_MAX_SPEED
-#define DEC_RAMP                1500 //ms deceleration time from MOTOR_MAX_SPEED to 0m/s
+#define ACC_RAMP                1500 //ms acceleration time from 0m/s to MOTOR_MAX_SPEED
+#define DEC_RAMP                1000 //ms deceleration time from MOTOR_MAX_SPEED to 0m/s
 
 // ----- gear motors --------------------------------------------------
 // for brushless motors, study the sections (drivers, adapter, protection etc.) in the Wiki (https://wiki.ardumower.de/index.php?title=DIY_Brushless_Driver_Board)
@@ -209,7 +210,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 
 
 // choose ticks per cutting disc revolution :
-#define MOW_TICKS_PER_REVOLUTION  6 / 2   // odometry ticks per cutting disc revolution 
+#define MOW_TICKS_PER_REVOLUTION  12 / 2   // odometry ticks per cutting disc revolution 
 
 
 #define MOW_FAULT_CURRENT 8.0       // mowing motor fault current (amps)

@@ -15,7 +15,11 @@ String EscapeForwardOp::name(){
 
 void EscapeForwardOp::begin(){
     // rotate stuck avoidance
-    driveForwardStopTime = millis() + 2000;
+	#if USE_LINEAR_SPEED_RAMP
+		driveForwardStopTime = millis() + ((300*200)/(OBSTACLEAVOIDANCESPEED * 100));  // t = s*2/v (300mm * 2 / OBSTACLEAVOIDANCESPEED )
+	#else
+		driveForwardStopTime = millis() + 2000;
+	#endif
 }
 
 

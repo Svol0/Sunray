@@ -127,6 +127,7 @@ double absolutePosSourceLat = 0;
 float lastGPSMotionX = 0;
 float lastGPSMotionY = 0;
 unsigned long nextGPSMotionCheckTime = 0;
+float minSpeedForMoveDetection  = 0.01;
 
 bool finishAndRestart = false;
 
@@ -656,16 +657,16 @@ bool robotShouldMove(){
   /*CONSOLE.print(motor.linearSpeedSet);
   CONSOLE.print(",");
   CONSOLE.println(motor.angularSpeedSet / PI * 180.0);  */
-  return ( fabs(motor.linearSpeedSet) > 0.001 );
+  return ( fabs(motor.linearSpeedSet) > minSpeedForMoveDetection );
 }
 
 bool robotShouldMoveForward(){
-   return ( motor.linearSpeedSet > 0.001 );
+   return ( motor.linearSpeedSet > minSpeedForMoveDetection );
 }
 
 // should robot rotate?
 bool robotShouldRotate(){
-  return ( (fabs(motor.linearSpeedSet) < 0.001) &&  (fabs(motor.angularSpeedSet) > 0.001) );
+  return ( (fabs(motor.linearSpeedSet) < minSpeedForMoveDetection) &&  (fabs(motor.angularSpeedSet) > minSpeedForMoveDetection) );
 }
 
 // should robot be in motion? NOTE: function ignores very short motion pauses (with motion low-pass filtering)

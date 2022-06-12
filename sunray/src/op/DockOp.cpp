@@ -27,7 +27,7 @@ void DockOp::begin(){
   bool routingFailed = false;      
   
   CONSOLE.println("OP_DOCK");
-  motor.setLinearAngularSpeed(0,0);
+  motor.setLinearAngularSpeed(0,0,true);
   motor.setMowState(false);                
 
   if ((initiatedbyOperator) || (lastMapRoutingFailed))  maps.clearObstacles();
@@ -136,7 +136,8 @@ void DockOp::onObstacle(){
       CONSOLE.print("triggerObstacle: ignoring, because charger connected");      
       return;
     }
-    CONSOLE.println("triggerObstacle");      
+    CONSOLE.println("triggerObstacle");
+    motor.setLinearAngularSpeed(0,0, false);	// stop without linear ramp
     statMowObstacles++;      
     if (maps.isDocking()) {    
         if (maps.retryDocking(stateX, stateY)) {

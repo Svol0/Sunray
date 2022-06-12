@@ -214,7 +214,7 @@ void computeRobotState(){
     posE = gps.relPosE;     
   }   
   
-  if (fabs(motor.linearSpeedSet) < 0.001){       
+  if (fabs(motor.linearSpeedSet) < 0.01){       
     resetLastPos = true;
   }
   
