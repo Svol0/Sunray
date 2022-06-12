@@ -1,4 +1,4 @@
-### This Version is a fork from the sunray release version 1.0.273 with the following added options:
+### This Version is a fork from the sunray release version 1.0.274 with the following added options:
 - **Set error if bumper stays permanently triggered:**
 set bumper error in case of continious triggering (time can be adjusted in config.h "BUMPER_MAX_TRIGGER_TIME".
 - **map setSpeed as maximum speed for navigation by joystick from sunray-app**
