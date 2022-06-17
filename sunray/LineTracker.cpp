@@ -106,9 +106,14 @@ void trackLine(bool runControl){
     // line control (stanley)    
     bool straight = maps.nextPointIsStraight();
 
+    // linarSpeedSet needed as absolut value for mapping
+    float CurrSpeed = motor.linearSpeedSet * 1000;                                                    
+    CurrSpeed = abs(CurrSpeed);
+    
     #if USE_LINEAR_SPEED_RAMP
       // linear speed ramp needs more distance to stop at high speeds
-      float closeToTargetLimitOffset = map((motor.linearSpeedSet * 1000), MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, 10, 100);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
+      float closeToTargetLimitOffset = map(CurrSpeed, MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, 10, 100);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
+      closeToTargetLimitOffset = max(10, min(100, closeToTargetLimitOffset)); // limitation for value if out of range
       const float closeToTargetLimit = (motor.calcStopWay + (closeToTargetLimitOffset/1000));
 
       const float closeToTargetSpeed = MOTOR_MIN_SPEED;
@@ -145,12 +150,12 @@ void trackLine(bool runControl){
     
     //Mapping of Stanley Control Parameters in relation to actual Setpoint value of speed
     //Values need to be multiplied, because map() function does not work well with small range decimals
-    float CurrSpeed = motor.linearSpeedSet * 1000;                                                    
-    CurrSpeed = abs(CurrSpeed);
     float k = map(CurrSpeed, MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, stanleyTrackingSlowK*1000, stanleyTrackingNormalK*1000);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
     float p = map(CurrSpeed, MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, stanleyTrackingSlowP*1000, stanleyTrackingNormalP*1000);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
-    k = k / 1000;                                                                                     
-    p = p / 1000;                                                
+    k = k / 1000;
+    p = p / 1000;
+    k = max(stanleyTrackingSlowK, min(stanleyTrackingNormalK, k));  // limitation for value if out of range
+    p = max(stanleyTrackingSlowP, min(stanleyTrackingNormalP, p));  // limitation for value if out of range
     
     angular =  p * trackerDiffDelta + atan2(k * lateralError, (0.001 + fabs(motor.linearSpeedSet)));       // correct for path errors           
     /*pidLine.w = 0;              

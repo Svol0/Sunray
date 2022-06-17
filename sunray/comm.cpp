@@ -177,6 +177,7 @@ void cmdMotor(){
   int lastCommaIdx = 0;
   float linear=0;
   float angular=0;
+  float calcLimit = 0;
   for (int idx=0; idx < cmd.length(); idx++){
     char ch = cmd[idx];
     //Serial.print("ch=");
@@ -187,14 +188,18 @@ void cmdMotor(){
 				linear = value;
 				if (USE_SETSPEED_FOR_APPJOYSTICK) {	// Svol0 -> see description in config.h at "USE_SETSPEED_FOR_APPJOYSTICK"
 					// map the manual control value for linear speed from range 0.00 till 0.33 to the range of 0.00 till setSpeed but at least 0.10
-					linear = map((value*100),0,33,0,max(setSpeed*100,10));
+					linear = map((value*100),-33,33,-(max(setSpeed*100,10)),max(setSpeed*100,10));
+          calcLimit = max(setSpeed*100,10);
+          linear = max(-calcLimit,min(calcLimit,linear));
 					linear = linear / 100;
 				}
 			} else if (counter == 2){
 				angular = value;
 				if (USE_SETSPEED_FOR_APPJOYSTICK) {
 					// map the manual control value for angular speed from range 0.00 till 0.50 to the range of 0.00 till setSpeed but at least 0.10
-					angular = map((value*100),0,50,0,max(setSpeed*151,15));
+					angular = map((value*100),-50,50,-(max(setSpeed*151,15)),max(setSpeed*151,15));
+          calcLimit = max(setSpeed*151,15);
+          angular = max(-calcLimit,min(calcLimit,angular));
 					angular = angular / 100;
 				}
 			}

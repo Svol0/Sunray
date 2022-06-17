@@ -21,7 +21,7 @@ void GpsWaitFixOp::begin(){
     //linear = 0;
     //angular = 0;      
     //mow = false;
-    motor.setLinearAngularSpeed(0,0, false); 
+    motor.setLinearAngularSpeed(0,0, true); 
     motor.setMowState(false);     
 }
 
