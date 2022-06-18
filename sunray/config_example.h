@@ -214,7 +214,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 
 
 #define MOW_FAULT_CURRENT 8.0       // mowing motor fault current (amps)
-#define MOW_OVERLOAD_CURRENT 2.0    // mowing motor overload current (amps)
+#define MOW_OVERLOAD_CURRENT 3.0    // mowing motor overload current (amps)
 
 // should the direction of mowing motor toggle each start? (yes: true, no: false)
 #define MOW_TOGGLE_DIR       true
@@ -325,7 +325,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define SONAR_INSTALLED 1              // uncomment if ultrasonic sensors are installed
 //#define SONAR_ENABLE true              // should ultrasonic sensor be used?
 #define SONAR_ENABLE false
-#define SONAR_TRIGGER_OBSTACLES true     // should sonar be used to trigger obstacles? if not, mower will only slow down
+#define SONAR_TRIGGER_OBSTACLES false     // should sonar be used to trigger obstacles? if not, mower will only slow down
 #define SONAR_LEFT_OBSTACLE_CM   10      // stop mowing operation below this distance (cm) 
 #define SONAR_CENTER_OBSTACLE_CM 10      // stop mowing operation below this distance (cm) 
 #define SONAR_RIGHT_OBSTACLE_CM  10      // stop mowing operation below this distance (cm) 
