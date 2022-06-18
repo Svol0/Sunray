@@ -9,6 +9,9 @@
 #include "robot.h"
 #include "Arduino.h"
 #include "LineTracker.h"
+#include <RunningMedian.h>
+
+RunningMedian samples = RunningMedian(MowMotorCurrentMedLen);
 
 unsigned long secTimer  = 0;
 int           countCallsPerSec  = 0;
@@ -17,7 +20,8 @@ int lastCounts  = 0;
 
 void Motor::begin() {
 	pwmMax = 255;
- 
+  SpeedOffset = 1.0; //X
+  pwmSpeedOffset = 1.0; //X 
   #ifdef MAX_MOW_RPM
     if (MAX_MOW_RPM <= 255) {
       pwmMaxMow = MAX_MOW_RPM;
@@ -87,7 +91,8 @@ void Motor::begin() {
   motorMowSense = 0;  
   motorLeftSenseLP = 0;
   motorRightSenseLP = 0;
-  motorMowSenseLP = 0;  
+  motorMowSenseLP = 0;
+  motorMowSenseMed = 0; //X  
   motorsSenseLP = 0;
 
   activateLinearSpeedRamp = USE_LINEAR_SPEED_RAMP;
@@ -112,7 +117,6 @@ void Motor::begin() {
   motorLeftPWMCurrLP = 0;
   motorRightPWMCurrLP=0;   
   motorMowPWMCurrLP = 0;
-  
   motorLeftRpmCurr=0;
   motorRightRpmCurr=0;
   motorMowRpmCurr=0;  
@@ -223,6 +227,31 @@ void Motor::speedPWM ( int pwmLeft, int pwmRight, int pwmMow )
     //pwmRight = (int)(pwmRight * pwmSpeedOffset);
   }
 
+  if ((pwmMow != 0) && (ADAPTIVE_SPEED)) {
+    switch (ADAPTIVE_SPEED_ALGORITHM) {
+      //Simple 2 point controller that applies a linear ramp to mowerspeed through a offset.
+      //The delta of SPEEDDOWNCURRENT-SPEEDUPCURRENT is the hysteresis
+      case 1:
+        if (motorMowSenseMed > SPEEDDOWNCURRENT) SpeedOffset = SPEED_FACTOR_MIN;
+        if (motorMowSenseMed < SPEEDUPCURRENT) SpeedOffset = SPEED_FACTOR_MAX;        
+        break;
+      case 2:
+      //empty  
+        break;
+      case 3:
+      //empty  
+        break;
+      default:
+      //empty  
+        break;
+    }
+    SpeedOffset = min(SPEED_FACTOR_MAX, max(SPEED_FACTOR_MIN, SpeedOffset));
+  }
+
+  //RC PWM Option
+   //if (stateButton == 3)
+   //{    pwmMow = mowPWM_RC; }
+
   //########################  Check pwm higher than Max ############################
   
   pwmLeft = min(pwmMax, max(-pwmMax, pwmLeft));
@@ -267,6 +296,7 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
         CONSOLE.print(" linear: ");
         CONSOLE.println(linear);
 */
+        if (ADAPTIVE_SPEED) linear = linear * SpeedOffset; // X
         if (linear > 0) { // pos value
           if (linearSpeedSet < 0) linearSpeedSet = linearSpeedSet + decStep; // noch pos
           else if (linearSpeedSet < linear) linearSpeedSet = linearSpeedSet + accStep; // speed up
@@ -300,9 +330,21 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
       }
      
    } else {
+     if (ADAPTIVE_SPEED) linear = linear * SpeedOffset; // X 
      linearSpeedSet = linear;
 //     angularSpeedSet = angular;
    }
+/*
+   //Global Speedlimits
+   if (linearSpeedSet >0){ 
+      linearSpeedSet = max(linearSpeedSet,MOTOR_MIN_SPEED); //If positive linear is less than MINSPEED, use MINSPEED as limit
+      linearSpeedSet = min(linearSpeedSet,MOTOR_MAX_SPEED); //If positive linear is more than MAXSPEED, use MAXSPEED as limit
+    }
+    if (linearSpeedSet <0){
+      linearSpeedSet = min(linearSpeedSet,-1*MOTOR_MIN_SPEED); //If negative linear is more than -MINSPEED, use -MINSPEED as limit
+      linearSpeedSet = max(linearSpeedSet,-1*MOTOR_MAX_SPEED); //If negative linear is less than -MAXSPEED, use -MAXSPEED as limit
+    }
+*/
    angularSpeedSet = angular;
    float rspeed = linearSpeedSet + angularSpeedSet * (wheelBaseCm /100.0 /2);          
    float lspeed = linearSpeedSet - angularSpeedSet * (wheelBaseCm /100.0 /2);          
@@ -348,8 +390,8 @@ void Motor::setMowState(bool switchOn){
     motorMowPWMSet = 0;  
     motorMowPWMCurr = 0;
   }
-
-   pwmSpeedOffset = 1.0; // reset Mow SpeedOffset
+  SpeedOffset = 1.0; // reset Mow SpeedOffset
+  pwmSpeedOffset = 1.0; // reset Mow SpeedOffset
 }
 
 
@@ -587,7 +629,7 @@ bool Motor::checkOdometryError() {
 void Motor::checkOverload(){
   motorLeftOverload = (motorLeftSenseLP > MOTOR_OVERLOAD_CURRENT);
   motorRightOverload = (motorRightSenseLP > MOTOR_OVERLOAD_CURRENT);
-  motorMowOverload = (motorMowSenseLP > MOW_OVERLOAD_CURRENT);
+  motorMowOverload = (motorMowSenseMed > MOW_OVERLOAD_CURRENT); //X
   if (motorLeftOverload || motorRightOverload || motorMowOverload){
     if (motorOverloadDuration == 0){
       CONSOLE.print("ERROR motor overload (average current too high) - duration=");
@@ -637,6 +679,8 @@ void Motor::sense(){
   motorRightSenseLP = lp * motorRightSenseLP + (1.0-lp) * motorRightSense;
   motorLeftSenseLP = lp * motorLeftSenseLP + (1.0-lp) * motorLeftSense;
   motorMowSenseLP = lp * motorMowSenseLP + (1.0-lp) * motorMowSense; 
+  samples.add(motorMowSense); //Puts Values of motorMowSense into median function
+  motorMowSenseMed = samples.getMedian(); //Get the Running Median as motorMowSenseMed
   motorsSenseLP = motorRightSenseLP + motorLeftSenseLP + motorMowSenseLP;
   motorRightPWMCurrLP = lp * motorRightPWMCurrLP + (1.0-lp) * ((float)motorRightPWMCurr);
   motorLeftPWMCurrLP = lp * motorLeftPWMCurrLP + (1.0-lp) * ((float)motorLeftPWMCurr);

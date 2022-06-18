@@ -197,8 +197,8 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define ENABLE_DYNAMIC_MOWER_SPEED false
 #define SPEED_ACCELERATION 0.005 // Speed factor will be changed with every programm loop 
 
-#define SPEED_FACTOR_MAX 1.2
-#define SPEED_FACTOR_MIN 0.5
+#define SPEED_FACTOR_MAX 1.0
+#define SPEED_FACTOR_MIN 0.3
 #define USE_MOWMOTOR_CURRENT_AVERAGE true
 #define MOWMOTOR_CURRENT_FACTOR 0.25
 
@@ -241,6 +241,32 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define DYNAMIC_MOWMOTOR_ALGORITHM 2 // 1 - linear; 2 - root-Function; 3 - square-Function
 #define MIN_MOW_RPM 170   //minimum value of mow RPM
 #define MAX_MOW_RPM 255   // maximum value is 255
+
+//Adaptive Speed on Mowmotorload
+//Do not use this function if ENABLE_DYNAMIC_MOWER_SPEED is true
+//Configuration tips: - The hysteresis is the "workwindow" where Speed is not changed, it is between SPEEDUPCURRENT and SPEEDDOWNCURRENT
+// - You want the hysteresis window as broad as possible, and as high as possible because it will handle that load on that speed (high broad window means set in higher amps range(amps/speed over time diagramm).
+// If that "window" of load gets exceeded (amps), you want a fast slowdown. If that "window" of load isn´t reached (amps), you want a not as fast speed up.
+// But the window shouldnt be to broad so it would never change speeds, like speedupcurrent set too low and speeddown current set too high.
+// A more broad window will result in less speed changes and more smooth operation, but tending to get undynamical. The window should´nt be to narrow,
+// because the controller will tend to swing but acts more dynamical.
+// - When you have fast slowdown on load because you have high over ground speed of mower (patch of high dense gras) consider higher SPEEDDOWNSTEPS than SPEEDUPSTEPS.
+// There may be even more load afterwards a patch of high or dense grass. You dont want it there to Speedup too fast and rush into the next patch of dense/high grass.
+// - After all, if you draw the Amps/Speed over Time Chart yourself and add the hysteresis lines (horizontally at amps(y-axis)) you´ll get the idea.
+// - The parameter of MOW_OVERLOAD_CURRENT is setting a new speed if true, then the scaling of the 2 point controller is altered to the new speedset
+// e.g. 10cm/s(OVERLOADtrueValue) - 40cm/s(App speedvalue) Versus: 1.0(SPEED_FACTOR_MAX) - 0.3 SPEED_FACTOR_MIN --> is slowvalue 0.03 with overload situation and slowvalue 13.3 without overload situation
+// - you shouldn´t let it go too slow, because then the gps no move detection function is detecting an obstacle (it will back off and make a circle)
+// - use MINSPEED to limit slowest linear speed
+// - Controller works best with USE_LINEAR_SPEED_RAMP true
+// - Controller not tested with: ENABLE_OVERLOAD_DETECTION true
+//Those settings work well with a 29cm 4Blade mowdeck and a Speedset of 0.39 in App. Check the Ardumower forum for further configuration hints.
+#define ADAPTIVE_SPEED true //Should Adaptive Speed on Mowmotorload be used? (Do not activate Dynamic gear motors speed if you enable this function)
+#define MowMotorCurrentMedLen 12 //Defines the medianlength of mowmotorcurrent measurement, smaller numbers: detect short load scenarios, higher numbers: short load scenarios won´t be "seen" and ignored. 12 is already quite low for reacting fast, tune for your needs.
+#define ADAPTIVE_SPEED_ALGORITHM 1 //Only option for now: (1) - 2Point Controller with hysteresis. The Hysteresis is the delta of SPEEDDOWNCURRENT and SPEEDUPCURRENT (e.g 0.2). In the hysteresis zone, speed is not changed
+#define SPEEDDOWNCURRENT 1.5 //The mower will slow down if mowmotorcurrent from median computation is greater than SPEEDDOWNCURRENT
+#define SPEEDUPCURRENT 0.9 //The mower will speed up if mowmotorcurrent from median computation is less than SPEEDUPCURRENT
+#define SPEEDUPSTEP 0.015 //If the conditions for SPEEDUP are met, every iteration of function this SPEEDUPSTEP (m/s per step) will be applied to mowerspeed. The function iterates with 50Hz
+#define SPEEDDOWNSTEP 0.025 //If the conditions for SPEEDDOWN are met, every iteration of function this SPEEDDOWNSTEP (m/s per step) will be applied to mowerspeed. The function iterates with 50Hz
 
 
 // ------ WIFI module (ESP8266 ESP-01 with ESP firmware 2.2.1) --------------------------------

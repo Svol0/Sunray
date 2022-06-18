@@ -36,6 +36,7 @@ class Motor {
     int  pwmMax;
     int  pwmMaxMow;  
     float  pwmSpeedOffset;
+    float SpeedOffset;
     float mowMotorCurrentAverage;
     float currentFactor;
     bool pwmSpeedCurveDetection;
@@ -56,6 +57,7 @@ class Motor {
     float motorLeftRpmCurrLP;
     float motorRightRpmCurrLP;
     float motorMowRpmCurrLP;
+    float motorMowSenseMed; //mower motor current (amps, Median) //X
     unsigned long motorMowSpinUpTime;
     void begin();
     void run();      
@@ -80,7 +82,8 @@ class Motor {
     float motorMowPWMCurr; 
     int motorLeftPWMCurr;
     int motorRightPWMCurr;    
-    float motorMowPWMCurrLP; 
+    float motorMowPWMCurrLP;
+//    float MowMotorCurrentMedLen;
     float motorLeftPWMCurrLP;
     float motorRightPWMCurrLP;    
     unsigned long lastControlTime;    
