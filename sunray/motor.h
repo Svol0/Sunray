@@ -34,7 +34,7 @@ class Motor {
     bool odometryError;    
     unsigned long motorOverloadDuration; // accumulated duration (ms)
     int  pwmMax;
-    int  pwmMaxMow;  
+    int  pwmMaxMow;
     float  pwmSpeedOffset;
     float SpeedOffset;
     float mowMotorCurrentAverage;
@@ -57,6 +57,7 @@ class Motor {
     float motorLeftRpmCurrLP;
     float motorRightRpmCurrLP;
     float motorMowRpmCurrLP;
+    float motorMowPWMCurr; 
     float motorMowSenseMed; //mower motor current (amps, Median) //X
     unsigned long motorMowSpinUpTime;
     void begin();
@@ -79,11 +80,10 @@ class Motor {
     float motorRightRpmLast;
     bool motorMowForwardSet; 
     float motorMowPWMSet;  
-    float motorMowPWMCurr; 
+//    float motorMowPWMCurr; 
     int motorLeftPWMCurr;
     int motorRightPWMCurr;    
     float motorMowPWMCurrLP;
-//    float MowMotorCurrentMedLen;
     float motorLeftPWMCurrLP;
     float motorRightPWMCurrLP;    
     unsigned long lastControlTime;    

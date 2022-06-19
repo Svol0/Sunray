@@ -16,12 +16,13 @@ RunningMedian samples = RunningMedian(MowMotorCurrentMedLen);
 unsigned long secTimer  = 0;
 int           countCallsPerSec  = 0;
 int lastCounts  = 0;
-
+unsigned long adaptivSpeedTimer = 0;
 
 void Motor::begin() {
 	pwmMax = 255;
   SpeedOffset = 1.0; //X
   pwmSpeedOffset = 1.0; //X 
+  adaptivSpeedTimer = millis();
   #ifdef MAX_MOW_RPM
     if (MAX_MOW_RPM <= 255) {
       pwmMaxMow = MAX_MOW_RPM;
@@ -30,7 +31,6 @@ void Motor::begin() {
   #else 
     pwmMaxMow = 255;
   #endif
-  
   pwmSpeedOffset = 1.0;
   mowMotorCurrentAverage = MOWMOTOR_CURRENT_FACTOR * MOW_OVERLOAD_CURRENT;
   currentFactor = MOWMOTOR_CURRENT_FACTOR;
@@ -232,8 +232,19 @@ void Motor::speedPWM ( int pwmLeft, int pwmRight, int pwmMow )
       //Simple 2 point controller that applies a linear ramp to mowerspeed through a offset.
       //The delta of SPEEDDOWNCURRENT-SPEEDUPCURRENT is the hysteresis
       case 1:
-        if (motorMowSenseMed > SPEEDDOWNCURRENT) SpeedOffset = SPEED_FACTOR_MIN;
-        if (motorMowSenseMed < SPEEDUPCURRENT) SpeedOffset = SPEED_FACTOR_MAX;        
+        if (motorMowSenseMed > SPEEDDOWNCURRENT){
+          adaptivSpeedTimer = millis();
+          SpeedOffset = SPEED_FACTOR_MIN;
+          //if (pwmMaxMow < MAX_MOW_RPM) 
+          pwmMaxMow = MAX_MOW_RPM;
+        }
+        if (motorMowSenseMed < SPEEDUPCURRENT){
+          if ((millis() - adaptivSpeedTimer) > 10000){
+          SpeedOffset = SPEED_FACTOR_MAX;        
+          // if (pwmMaxMow > MIN_MOW_RPM) 
+          pwmMaxMow = MIN_MOW_RPM;
+          }
+        }
         break;
       case 2:
       //empty  
@@ -257,8 +268,15 @@ void Motor::speedPWM ( int pwmLeft, int pwmRight, int pwmMow )
   pwmLeft = min(pwmMax, max(-pwmMax, pwmLeft));
   pwmRight = min(pwmMax, max(-pwmMax, pwmRight));  
   pwmMow = min(pwmMaxMow, max(-pwmMaxMow, pwmMow)); 
-  
   motorDriver.setMotorPwm(pwmLeft, pwmRight, pwmMow);
+   CONSOLE.print("pwmMow: ");
+   CONSOLE.print(pwmMow);
+   CONSOLE.print(" | pwmMaxMow: ");
+   CONSOLE.print(pwmMaxMow); 
+   CONSOLE.print(" | motorMowPWMSet: ");
+   CONSOLE.print(motorMowPWMSet);
+   CONSOLE.print(" | motorMowForwardSet: ");
+   CONSOLE.println(motorMowForwardSet);
 }
 
 // linear: m/s
@@ -376,12 +394,17 @@ void Motor::setMowState(bool switchOn){
   //CONSOLE.print("Motor::setMowState ");
   //CONSOLE.println(switchOn);
   if ((enableMowMotor) && (switchOn)){
-    if (abs(motorMowPWMSet) > 0) return; // mowing motor already switch ON
-    motorMowSpinUpTime = millis();
+    CONSOLE.println("Mowmotor switched on");
+    if ((abs(motorMowPWMSet) > 0) || (abs(motorMowPWMSet) != abs(pwmMaxMow))){
+      if (abs(motorMowPWMSet) == abs(pwmMaxMow)){
+        return; // mowing motor already switch ON or set value for pwmMaxMow changes, motorMowPWMSet need to be updated
+      }
+    }
+    if (abs(motorMowPWMSet) == 0) motorMowSpinUpTime = millis();
     if (toggleMowDir){
       // toggle mowing motor direction each mow motor start
-      motorMowForwardSet = !motorMowForwardSet;
-      if (motorMowForwardSet) motorMowPWMSet = pwmMaxMow;  
+      if (abs(motorMowPWMSet) == 0) motorMowForwardSet = !motorMowForwardSet; // only toggel, if it is started from zero
+      if (motorMowForwardSet) motorMowPWMSet = pwmMaxMow; 
         else motorMowPWMSet = -pwmMaxMow;  
     }  else  {      
       motorMowPWMSet = pwmMaxMow;  
