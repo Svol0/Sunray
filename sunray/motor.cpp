@@ -37,7 +37,8 @@ void Motor::begin() {
 
   // calc ramp steps
   accStep = ((float)MOTOR_MAX_SPEED * 20) / (float)ACC_RAMP;
-  decStep = ((float)MOTOR_MAX_SPEED *20) / (float)DEC_RAMP;
+  decStep = ((float)MOTOR_MAX_SPEED * 20) / (float)DEC_RAMP;
+  mowRampStep = ((float)MAX_MOW_RPM * 50) / (float)MOW_SPINUPTIME;
   lastLinearSetTime = millis();
   calcStopWay       = 0;
 
@@ -233,10 +234,12 @@ void Motor::speedPWM ( int pwmLeft, int pwmRight, int pwmMow )
       //The delta of SPEEDDOWNCURRENT-SPEEDUPCURRENT is the hysteresis
       case 1:
         if (motorMowSenseMed > SPEEDDOWNCURRENT){
-          adaptivSpeedTimer = millis();
-          SpeedOffset = SPEED_FACTOR_MIN;
-          //if (pwmMaxMow < MAX_MOW_RPM) 
-          pwmMaxMow = MAX_MOW_RPM;
+          if (millis() > motor.motorMowSpinUpTime + MOW_SPINUPTIME){
+            adaptivSpeedTimer = millis();
+            SpeedOffset = SPEED_FACTOR_MIN;
+            //if (pwmMaxMow < MAX_MOW_RPM) 
+            pwmMaxMow = MAX_MOW_RPM;
+          }
         }
         if (motorMowSenseMed < SPEEDUPCURRENT){
           if ((millis() - adaptivSpeedTimer) > 10000){
@@ -269,6 +272,8 @@ void Motor::speedPWM ( int pwmLeft, int pwmRight, int pwmMow )
   pwmRight = min(pwmMax, max(-pwmMax, pwmRight));  
   pwmMow = min(pwmMaxMow, max(-pwmMaxMow, pwmMow)); 
   motorDriver.setMotorPwm(pwmLeft, pwmRight, pwmMow);
+
+  /*
    CONSOLE.print("pwmMow: ");
    CONSOLE.print(pwmMow);
    CONSOLE.print(" | pwmMaxMow: ");
@@ -277,6 +282,7 @@ void Motor::speedPWM ( int pwmLeft, int pwmRight, int pwmMow )
    CONSOLE.print(motorMowPWMSet);
    CONSOLE.print(" | motorMowForwardSet: ");
    CONSOLE.println(motorMowForwardSet);
+   */
 }
 
 // linear: m/s
@@ -795,7 +801,20 @@ void Motor::control(){
 
   //########################  Calculate PWM for mowing motor ############################
   
-  motorMowPWMCurr = 0.99 * motorMowPWMCurr + 0.01 * motorMowPWMSet;
+  //motorMowPWMCurr = 0.99 * motorMowPWMCurr + 0.01 * motorMowPWMSet;
+          if (motorMowPWMSet > 0) { // pos value
+          if (motorMowPWMCurr < 0) motorMowPWMCurr = motorMowPWMCurr + mowRampStep; // noch pos
+          else if (motorMowPWMCurr < motorMowPWMSet) motorMowPWMCurr = motorMowPWMCurr + mowRampStep; // speed up
+          else motorMowPWMCurr = motorMowPWMCurr - mowRampStep; // slow down
+        } else if (motorMowPWMSet < 0) { // neg value
+            if (motorMowPWMCurr > 0) motorMowPWMCurr = motorMowPWMCurr - mowRampStep; // noch pos
+            else if (motorMowPWMCurr < motorMowPWMSet) motorMowPWMCurr = motorMowPWMCurr + mowRampStep; 
+            else motorMowPWMCurr = motorMowPWMCurr - mowRampStep;
+        } else { // linear = 0
+          if (motorMowPWMCurr > 0) motorMowPWMCurr = motorMowPWMCurr - mowRampStep;
+          else motorMowPWMCurr = motorMowPWMCurr + mowRampStep;
+        }
+        if ((motorMowPWMSet == 0) && (motorMowPWMCurr != 0) && (fabs(motorMowPWMCurr) < mowRampStep)) motorMowPWMCurr = 0;
 
   //########################  set PWM for all motors ############################
 

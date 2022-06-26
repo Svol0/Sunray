@@ -110,6 +110,7 @@ class Motor {
     unsigned long lastLinearSetTime;  // Svol0: test
     float accStep;
     float decStep;
+    float mowRampStep;
 };
 
 
