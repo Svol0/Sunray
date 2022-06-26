@@ -1,4 +1,4 @@
-### This Version is a fork from the sunray release version 1.0.274 with the following added options:
+### This Version is a fork from the sunray release version 1.0.276 with the following added options:
 - **Set error if bumper stays permanently triggered:**
 set bumper error in case of continious triggering (time can be adjusted in config.h "BUMPER_MAX_TRIGGER_TIME".
 - **map setSpeed as maximum speed for navigation by joystick from sunray-app**
@@ -11,9 +11,12 @@ see "MOW_SPINUPTIME; OVERLOADSPEED; ROTATETOTARGETSPEED; TRACKSLOWSPEED; APPROAC
 
 - **Reboot GPS at a specific docking point**
   - Bei Fahrt zur Docking-Station wird über den Parameter Wert von "DOCK_SLOW_ONLY_LAST_POINTS" die Position des Dockingpunktes angegeben (betrachtet aus Richtung Dockingstation), ab welchem mit langsamer Geschwindigkeit (linear = 0,1) weiter gefahren wird. Alle Dockingpunkte vorher werden mit der normalen (setspeed) Geschwindigkeit angefahren. Ein Wert von "Null" bewirkt, dass alle Punkte mit langsamer Geschwindigkeit angefahren werden.
+  - Geht GPS-Fix auf dem Weg zwischen dem vorletzten Dockingpunkt und der Dockingstation verloren, wird die Fahrt mit IMU und ODO fortgesetzt.
   - Bei Fahrt aus der Docking-Station wird über den Parameter Wert von "DOCK_POINT_GPS_REBOOT" die Position des Dockingpunktes angegeben (betrachtet aus Richtung Dockingstation), ab welchem ein GPS-Reboot durchgeführt werden soll. Der Mäher wartet dann, bis ein GPS-Fix vorhanden ist, und setzt das undocking fort. Da der Mäher dann eine korrekte Position hat, wird der Rest der Dockingstrecke vorwärts gerichtet, mit normaler Geschwindigkeit und GPS-Unterstützung fortgesetzt. Bei aktiviertem "DOCK_IGNORE_GPS" wird nur bis zum GPS-Reset Punkt ohne GPS-Unterstützung gefahren. Ein Wert von "Null" bewirkt keinen GPS-Reboot beim undocking.
   - Der Dockingpunkt für den GPS-Reboot sollte so gewählt werden, dass dieser sich an einer Stelle befindet, wo der Mäher einfach einen guten GPS-FIX bekommen kann.
 
+  - **WICHTIGE INFO:** Bitte min. 2 Dockingpunkte mehr anlegen als bei „DOCK_POINT_GPS_REBOOT“ eingestellt ist. Das liegt an der zusätzlichen retry Docking by obstacle Funktion, die in den Versionen > 1.0.230 eingeführt wurde. Trifft der Mäher beim Docking auf ein Hinderniss, fährt er wieder zurück bis zum GPSßReboot Punkt, rebootet das GPS und versucht es erneut.
+ 
   - **Detailierter Ablauf bei Verwendung von "DOCK_POINT_GPS_REBOOT" in Kombination mit "DOCK_IGNORE_GPS" = true:**
     - Mäher fährt rückwärts mit langsamer Geschwindigkeit und nur mit IMU/ODO bis zu dem bei "DOCK_POINT_GPS_REBOOT" eingestelltem Dockingpoint.
     - Dort angekommen wird ein GPS-Reset durchgeführt und der Mäher stoppt.
