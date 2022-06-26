@@ -8,6 +8,9 @@
 #include "../../robot.h"
 #include "../../LineTracker.h"
 #include "../../map.h"
+#include "../../config.h"
+
+unsigned long maxWaitTimeForRecoverGPS = 0;	// value in ms
 
 String KidnapWaitOp::name(){
   return "KidnapWait";
@@ -15,7 +18,15 @@ String KidnapWaitOp::name(){
 
 void KidnapWaitOp::begin(){    
   stateSensor = SENS_KIDNAPPED;
-  recoverGpsTime = millis() + 30000;
+  if (GPS_COLD_REBOOT == true){
+    maxWaitTimeForRecoverGPS = (60000 * 5);	// 5 minuten
+  } else {
+    maxWaitTimeForRecoverGPS = 30000;	// value in ms
+  }
+  CONSOLE.print("KidnapWait.cpp: maxWaitTimeForRecoverGPS");
+  CONSOLE.print(maxWaitTimeForRecoverGPS);
+  CONSOLE.println(" ms");  
+  recoverGpsTime = millis() + maxWaitTimeForRecoverGPS;
   recoverGpsCounter = 0;
 }
 
@@ -43,7 +54,15 @@ void KidnapWaitOp::run(){
 
   if (millis() > recoverGpsTime){
     CONSOLE.println("KIDNAP_DETECT");
-    recoverGpsTime = millis() + 30000;
+	if (GPS_COLD_REBOOT == true){
+	  maxWaitTimeForRecoverGPS = (60000 * 5);	// 5 minuten
+	} else {
+	  maxWaitTimeForRecoverGPS = 30000;	// value in ms
+	}
+	CONSOLE.print("KidnapWait.cpp: maxWaitTimeForRecoverGPS");
+	CONSOLE.print(maxWaitTimeForRecoverGPS);
+	CONSOLE.println(" ms");	
+    recoverGpsTime = millis() + maxWaitTimeForRecoverGPS;
     recoverGpsCounter++;
     if (recoverGpsCounter == 3){          
       CONSOLE.println("error: kidnapped!");
@@ -52,7 +71,7 @@ void KidnapWaitOp::run(){
       return;
     }   
     if (GPS_REBOOT_RECOVERY){           
-      gps.reboot();   // try to recover from false GPS fix     
+      gps.reboot();   // try to recover from false GPS fix
     }
   }
 }

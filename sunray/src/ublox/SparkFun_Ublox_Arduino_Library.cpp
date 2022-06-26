@@ -40,6 +40,7 @@
 */
 
 #include "SparkFun_Ublox_Arduino_Library.h"
+#include "../../config.h"
 
 SFE_UBLOX_GPS::SFE_UBLOX_GPS(void)
 {
@@ -1872,18 +1873,38 @@ boolean SFE_UBLOX_GPS::saveConfigSelective(uint32_t configMask, uint16_t maxWait
 
 void SFE_UBLOX_GPS::GNSSRestart()
 {
+	/*
+	BBR sections to clear. The following special sets apply:
+	• 0x0000 Hot start
+	• 0x0001 Warm start
+	• 0xFFFF Cold star
+	
+	Reset Type
+	• 0x00 = Hardware reset (watchdog) immediately
+	• 0x01 = Controlled software reset
+	• 0x02 = Controlled software reset (GNSS only)
+	• 0x04 = Hardware reset (watchdog) after shutdown
+	• 0x08 = Controlled GNSS stop
+	• 0x09 = Controlled GNSS start
+	*/	
+	
   // Issue hard reset
   packetCfg.cls = UBX_CLASS_CFG;
   packetCfg.id = UBX_CFG_RST;
   packetCfg.len = 4;
   packetCfg.startingSpot = 0;
-  payloadCfg[0] = 0x00;       // warm start
-  payloadCfg[1] = 0x00;       // warm start
+  if (GPS_COLD_REBOOT == true){
+	payloadCfg[0] = 0xFF;       // cold start
+	payloadCfg[1] = 0xFF;       // cold start
+  } else {
+	payloadCfg[0] = 0x00;       // warm start
+	payloadCfg[1] = 0x00;       // warm start
+  }
   payloadCfg[2] = 0x02;       // 0x02=software reset (GNSS only)
   payloadCfg[3] = 0;          // reserved
   sendCommand(&packetCfg, 0); // don't expect ACK
 }
-
+	
 //Reset module to factory defaults
 //This still works but it is the old way of configuring ublox modules. See getVal and setVal for the new methods
 boolean SFE_UBLOX_GPS::factoryDefault(uint16_t maxWait)
