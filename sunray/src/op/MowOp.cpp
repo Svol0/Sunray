@@ -10,6 +10,7 @@
 #include "../../LineTracker.h"
 #include "../../Stats.h"
 #include "../../map.h"
+#include "../../config.h"
 
 
 MowOp::MowOp(){
@@ -163,7 +164,7 @@ void MowOp::onMotorError(){
             CONSOLE.print("MowOp::onMotorError motorErrorCounter=");       
             CONSOLE.println(motorErrorCounter);
             if (maps.wayMode != WAY_DOCK){
-                if (motorErrorCounter < 3){                     
+                if (motorErrorCounter < MAX_MOTOR_ERROR_COUNTER){                     
                     //stateSensor = SENS_MOTOR_ERROR;
                     changeOp(escapeReverseOp, true);     // trigger obstacle avoidance 
                     return;
