@@ -800,21 +800,11 @@ void Motor::control(){
 //  CONSOLE.println(tempPwmSpeedOffset);
 
   //########################  Calculate PWM for mowing motor ############################
-  
-  //motorMowPWMCurr = 0.99 * motorMowPWMCurr + 0.01 * motorMowPWMSet;
-          if (motorMowPWMSet > 0) { // pos value
-          if (motorMowPWMCurr < 0) motorMowPWMCurr = motorMowPWMCurr + mowRampStep; // noch pos
-          else if (motorMowPWMCurr < motorMowPWMSet) motorMowPWMCurr = motorMowPWMCurr + mowRampStep; // speed up
-          else motorMowPWMCurr = motorMowPWMCurr - mowRampStep; // slow down
-        } else if (motorMowPWMSet < 0) { // neg value
-            if (motorMowPWMCurr > 0) motorMowPWMCurr = motorMowPWMCurr - mowRampStep; // noch pos
-            else if (motorMowPWMCurr < motorMowPWMSet) motorMowPWMCurr = motorMowPWMCurr + mowRampStep; 
-            else motorMowPWMCurr = motorMowPWMCurr - mowRampStep;
-        } else { // linear = 0
-          if (motorMowPWMCurr > 0) motorMowPWMCurr = motorMowPWMCurr - mowRampStep;
-          else motorMowPWMCurr = motorMowPWMCurr + mowRampStep;
-        }
-        if ((motorMowPWMSet == 0) && (motorMowPWMCurr != 0) && (fabs(motorMowPWMCurr) < mowRampStep)) motorMowPWMCurr = 0;
+
+  if (ADAPTIVE_SPEED == true){
+    if (motorMowPWMCurr >= MIN_MOW_RPM) motorMowPWMCurr = 0.95 * motorMowPWMCurr + 0.05 * motorMowPWMSet; // faster speed change between MIN_MOW_RPM and MAX_MOW_RPM
+    else motorMowPWMCurr = 0.99 * motorMowPWMCurr + 0.01 * motorMowPWMSet;  // slow speedup till MIN_MOW_RPM
+  } else motorMowPWMCurr = 0.99 * motorMowPWMCurr + 0.01 * motorMowPWMSet;
 
   //########################  set PWM for all motors ############################
 
