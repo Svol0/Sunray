@@ -1,6 +1,7 @@
 ### This Version is a fork from the sunray release version 1.0.276 with the following added options:
 - **Set error if bumper stays permanently triggered:**
 set bumper error in case of continious triggering (time can be adjusted in config.h "BUMPER_MAX_TRIGGER_TIME".
+(time is in seconds; 0 = no error if bumper stays triggered continiously)
 - **map setSpeed as maximum speed for navigation by joystick from sunray-app**
 It is possible to navigate the mower by touch-joystick in sunray-app.
 In some cases it could be neccessary to navigate the mower very soften, especially when your connected by wifi to the mower.
@@ -26,3 +27,6 @@ see "MOW_SPINUPTIME; OVERLOADSPEED; ROTATETOTARGETSPEED; TRACKSLOWSPEED; APPROAC
 
   Wer kein akustisches Feedback möchte, kann alle Zeilen die mit "if (!buzzer.isPlaying())" beginnen einfach auskommentieren.
   Zur Zeit sind auch noch Consolen-Ausgaben vorhanden, um eine bessere Kontrolle der Funktion beim testen zu haben.
+
+- **reduced bumper sensitivity by timotto**
+If the bumper spring strength is weaker than the lawn and causing the bumper to trigger regularly. This configuration option BUMPER_TRIGGER_DELAY in config.h delays the bumper trigger by the given milliseconds.

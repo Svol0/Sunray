@@ -1,4 +1,4 @@
-// Ardumower Sunray V1.0.274  with added GPS-Reboot by undocking; map setSpeed to app joystickspeed; speed parameters; new linear ramp
+// Ardumower Sunray V1.0.276  with added GPS-Reboot by undocking; map setSpeed to app joystickspeed; speed parameters; new linear ramp; reduced bumper sensitivity
 // Copyright (c) 2013-2020 by Alexander Grau, Grau GmbH
 // Licensed GPLv3 for open source use
 // or Grau GmbH Commercial License for commercial use (http://grauonline.de/cms2/?page_id=153)
@@ -346,9 +346,10 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 // see Wiki on how to install bumperduino or freewheel sensor:
 // https://wiki.ardumower.de/index.php?title=Bumper_sensor
 // https://wiki.ardumower.de/index.php?title=Free_wheel_sensor
-// #define BUMPER_ENABLE true
-#define BUMPER_ENABLE false
+#define BUMPER_ENABLE true
+//#define BUMPER_ENABLE false
 #define BUMPER_DEADTIME 1000  // linear motion dead-time (ms) after bumper is allowed to trigger
+#define BUMPER_TRIGGER_DELAY  100 // bumper must be active for (ms) to trigger
 #define BUMPER_MAX_TRIGGER_TIME 30         // if bumpersensor stays permanent triggered mower will stop with bumper error (time in seconds; 0 = disabled)
 
 

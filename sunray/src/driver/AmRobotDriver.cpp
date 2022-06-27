@@ -40,9 +40,10 @@ volatile float motorLeftDurationMax = 0;
 volatile float motorRightDurationMax = 0;
 volatile float motorMowDurationMax = 0;
 
-volatile bool leftPressed = false;
-volatile bool rightPressed = false;
-
+//volatile bool leftPressed = false;
+//volatile bool rightPressed = false;
+volatile uint32_t leftTriggeredSince = 0;
+volatile uint32_t rightTriggeredSince = 0;
 
 volatile boolean tone_pin_state = false;
 
@@ -607,11 +608,13 @@ void AmBatteryDriver::keepPowerOn(bool flag){
 
 // ------------------------------------------------------------------------------------
 void BumperLeftInterruptRoutine(){
-  leftPressed = (digitalRead(pinBumperLeft) == LOW);  
+  //leftPressed = (digitalRead(pinBumperLeft) == LOW);  
+  leftTriggeredSince = digitalRead(pinBumperLeft) == LOW ? millis() : 0;
 }
 
 void BumperRightInterruptRoutine(){
-  rightPressed = (digitalRead(pinBumperRight) == LOW);  
+  //rightPressed = (digitalRead(pinBumperRight) == LOW);  
+  rightTriggeredSince = digitalRead(pinBumperRight) == LOW ? millis() : 0;
 }
 
 
@@ -623,12 +626,19 @@ void AmBumperDriver::begin(){
 }
 
 void AmBumperDriver::getTriggeredBumper(bool &leftBumper, bool &rightBumper){
-  leftBumper = leftPressed;
-  rightBumper = rightPressed;
+//  leftBumper = leftPressed;
+//  rightBumper = rightPressed;
+  const uint32_t now = millis();
+  leftBumper = leftTriggeredSince != 0 && (now - leftTriggeredSince) > triggerTime;
+  rightBumper = rightTriggeredSince != 0 && (now - rightTriggeredSince) > triggerTime;
 }
 
 bool AmBumperDriver::obstacle(){
-  return (leftPressed || rightPressed);
+  //return (leftPressed || rightPressed);
+  bool left, right;
+  getTriggeredBumper(left, right);
+
+  return left || right;
 }
     
 

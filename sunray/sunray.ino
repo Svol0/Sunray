@@ -1,4 +1,4 @@
-// Ardumower Sunray actual master V1.0.276 with added GPS-Reboot by undocking; map setSpeed to app joystickspeed; speed parameters; new linearRamp; adaptiv speed
+// Ardumower Sunray V1.0.276  with added GPS-Reboot by undocking; map setSpeed to app joystickspeed; speed parameters; new linear ramp; reduced bumper sensitivity
 // Copyright (c) 2013-2020 by Alexander Grau, Grau GmbH
 // Licensed GPLv3 for open source use
 // or Grau GmbH Commercial License for commercial use (http://grauonline.de/cms2/?page_id=153)

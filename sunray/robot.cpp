@@ -80,7 +80,7 @@ const signed char orientationMatrix[9] = {
   AmRobotDriver robotDriver;
   AmMotorDriver motorDriver;
   AmBatteryDriver batteryDriver;
-  AmBumperDriver bumper;
+  AmBumperDriver bumper(BUMPER_TRIGGER_DELAY);
   AmStopButtonDriver stopButton;
   AmRainSensorDriver rainDriver;
   AmLiftSensorDriver liftDriver;
