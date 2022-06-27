@@ -17,6 +17,7 @@ unsigned long secTimer  = 0;
 int           countCallsPerSec  = 0;
 int lastCounts  = 0;
 unsigned long adaptivSpeedTimer = 0;
+bool mowMsgTrg  = false;
 
 void Motor::begin() {
 	pwmMax = 255;
@@ -234,7 +235,7 @@ void Motor::speedPWM ( int pwmLeft, int pwmRight, int pwmMow )
       //The delta of SPEEDDOWNCURRENT-SPEEDUPCURRENT is the hysteresis
       case 1:
         if (motorMowSenseMed > SPEEDDOWNCURRENT){
-          if (millis() > motor.motorMowSpinUpTime + MOW_SPINUPTIME){
+          if (millis() > motor.motorMowSpinUpTime + MOW_SPINUPTIME){ //avoid trigger by speed up
             adaptivSpeedTimer = millis();
             SpeedOffset = SPEED_FACTOR_MIN;
             //if (pwmMaxMow < MAX_MOW_RPM) 
@@ -400,7 +401,10 @@ void Motor::setMowState(bool switchOn){
   //CONSOLE.print("Motor::setMowState ");
   //CONSOLE.println(switchOn);
   if ((enableMowMotor) && (switchOn)){
-    CONSOLE.println("Mowmotor switched on");
+    if (!mowMsgTrg){
+      CONSOLE.println("Mowmotor switched on");
+      mowMsgTrg = true;
+    }
     if ((abs(motorMowPWMSet) > 0) || (abs(motorMowPWMSet) != abs(pwmMaxMow))){
       if (abs(motorMowPWMSet) == abs(pwmMaxMow)){
         return; // mowing motor already switch ON or set value for pwmMaxMow changes, motorMowPWMSet need to be updated
@@ -418,6 +422,10 @@ void Motor::setMowState(bool switchOn){
   } else {
     motorMowPWMSet = 0;  
     motorMowPWMCurr = 0;
+    if (mowMsgTrg){
+      CONSOLE.println("Mowmotor switched off");
+      mowMsgTrg = false;
+    }
   }
   SpeedOffset = 1.0; // reset Mow SpeedOffset
   pwmSpeedOffset = 1.0; // reset Mow SpeedOffset
@@ -802,7 +810,7 @@ void Motor::control(){
   //########################  Calculate PWM for mowing motor ############################
 
   if (ADAPTIVE_SPEED == true){
-    if (motorMowPWMCurr >= MIN_MOW_RPM) motorMowPWMCurr = 0.95 * motorMowPWMCurr + 0.05 * motorMowPWMSet; // faster speed change between MIN_MOW_RPM and MAX_MOW_RPM
+    if (motorMowPWMCurr >= MIN_MOW_RPM) motorMowPWMCurr = 0.93 * motorMowPWMCurr + 0.07 * motorMowPWMSet; // faster speed change between MIN_MOW_RPM and MAX_MOW_RPM
     else motorMowPWMCurr = 0.99 * motorMowPWMCurr + 0.01 * motorMowPWMSet;  // slow speedup till MIN_MOW_RPM
   } else motorMowPWMCurr = 0.99 * motorMowPWMCurr + 0.01 * motorMowPWMSet;
 
