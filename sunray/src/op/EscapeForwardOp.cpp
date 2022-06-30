@@ -16,7 +16,46 @@ String EscapeForwardOp::name(){
 void EscapeForwardOp::begin(){
     // rotate stuck avoidance
 	#if USE_LINEAR_SPEED_RAMP
-		driveForwardStopTime = millis() + ((300*200)/(OBSTACLEAVOIDANCESPEED * 100));  // t = s*2/v (300mm * 2 / OBSTACLEAVOIDANCESPEED )
+		// new calculation for reverse way
+		float mowerObstacleAvoidanceSpeed = OBSTACLEAVOIDANCESPEED;
+		if ((mowerObstacleAvoidanceSpeed == 0) || (mowerObstacleAvoidanceSpeed > MOTOR_MAX_SPEED)) mowerObstacleAvoidanceSpeed = 0.1;
+		float mowerAccRamp = (ACC_RAMP/MOTOR_MAX_SPEED)*mowerObstacleAvoidanceSpeed;
+		float mowerDecRamp = (DEC_RAMP/MOTOR_MAX_SPEED)*mowerObstacleAvoidanceSpeed;
+		if (mowerAccRamp == 0) mowerAccRamp = 1;
+		if (mowerDecRamp == 0) mowerDecRamp = 1;	
+		float wayAccRamp	= (mowerObstacleAvoidanceSpeed * (mowerAccRamp/1000)) / 2;
+		float wayDecRamp	= (mowerObstacleAvoidanceSpeed * (mowerDecRamp/1000)) / 2;		
+		float aBeschl	= (mowerObstacleAvoidanceSpeed * 1000) / mowerAccRamp;							// calculate acceleration by obstacle avoidance speed and ramp
+		float sBeschl	= (0.3 / (mowerAccRamp + mowerDecRamp))*mowerAccRamp;		// calculate the part of the reversway by acceleration (30cm fix)
+		float sVerz		= (0.3 / (mowerAccRamp + mowerDecRamp))*mowerDecRamp;		// calculate the part of the reversway by acceleration (30cm fix)
+		float tBeschl	= 0;
+		float sKonst	= 0;
+		float tOffset	= 0;
+		if (wayAccRamp < sBeschl){
+			sKonst = sBeschl - wayAccRamp;
+			tBeschl = mowerAccRamp;
+			tOffset	= (0.1 / mowerObstacleAvoidanceSpeed)*1000;	// add 10cm more (result by testing)
+		} else tBeschl	= (sqrt((2*sBeschl)/aBeschl) *1000);												// calculate time for reverse action
+			
+		if (wayDecRamp < sVerz) sKonst = sKonst + (sVerz - wayDecRamp);
+		float tKonst	= (sKonst / mowerObstacleAvoidanceSpeed)*1000;
+		
+		CONSOLE.print("EscapeForwardOP::begin aBeschl:");
+		CONSOLE.print(aBeschl);
+		CONSOLE.print(" | sBeschl:");
+		CONSOLE.print(sBeschl);
+		CONSOLE.print(" | tBeschl:");
+		CONSOLE.print(tBeschl);
+		CONSOLE.print(" | wayAccRamp:");
+		CONSOLE.print(wayAccRamp);
+		CONSOLE.print(" | wayDecRamp:");
+		CONSOLE.print(wayDecRamp);
+		CONSOLE.print(" | sKonst:");
+		CONSOLE.print(sKonst);
+		CONSOLE.print(" | tKonst:");
+		CONSOLE.println(tKonst);
+		
+      driveForwardStopTime = millis() + tBeschl + tKonst + tOffset;  // calculated time for reverse action
 	#else
 		driveForwardStopTime = millis() + 2000;
 	#endif

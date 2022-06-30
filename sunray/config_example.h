@@ -150,6 +150,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define SONARSPEED              0.10 //m/s
 #define DOCKANGULARSPEED        0.25 //rad/s
 #define OBSTACLEAVOIDANCESPEED  0.15 //m/s
+#define OBSTACLEAVOIDANCEWAY    0.50  // way in meters the mover will drive backwards in case of obstacle detection
 #define MOTOR_MAX_SPEED         0.50          // limitation for setSpeed value from Sunray-App (0,01 to 0,59m/sec are possible) to avoid to high speed setting by mistake   // SOEW_NEU
 #define MOTOR_MIN_SPEED         0.05          // minimal driving speed
 
