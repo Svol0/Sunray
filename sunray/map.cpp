@@ -1182,17 +1182,17 @@ bool Map::nextDockPoint(bool sim){
         lastTargetPoint.assign(targetPoint);
         trackSlow = true; // Svol0:
         if (dockPointsIdx == 0) {
-          CONSOLE.println("nextDockPoint: shouldRetryDock=false; dockPointsIdx = 0");
+          CONSOLE.println("Map::nextDockPoint: shouldRetryDock=false; dockPointsIdx = 0");
           shouldRetryDock=false;
           reverseTillGpsRebootPoint = false;
         }
         if (shouldRetryDock || reverseTillGpsRebootPoint) {
-          CONSOLE.println("nextDockPoint: shouldRetryDock=true");
+          CONSOLE.println("Map::nextDockPoint: shouldRetryDock=true");
           // Svol0:
           if (reverseTillGpsRebootPoint) {
             if (((dockPointsIdx+1) == (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){
               dockGpsRebootState = 1;                    // activate gps-reboot in robot.cpp
-              CONSOLE.print("map: gps-reboot by retry docking at dockingpoint : ");
+              CONSOLE.print("Map::nextDockPoint - gps-reboot by retry docking at dockingpoint: ");
               CONSOLE.print(dockPointsIdx);
               CONSOLE.print(" DOCK_POINT_GPS_REBOOT: ");
               CONSOLE.println(dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT));
@@ -1204,7 +1204,7 @@ bool Map::nextDockPoint(bool sim){
           if (((dockPointsIdx+1) > (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){                                                                 
             if (!sim) useGPSfixForPosEstimation = !DOCK_IGNORE_GPS;
             if (!sim) useGPSfixForDeltaEstimation = !DOCK_IGNORE_GPS;
-            CONSOLE.print("Map::nextDockPoint - gps-fix not needed for reverse? 0=no/1=yes :");
+            CONSOLE.print("Map::nextDockPoint - gps-fix needed for reverse? 1=no/0=yes :");
             CONSOLE.print(DOCK_IGNORE_GPS);
             CONSOLE.print(" | dockPointsIdx: ");
             CONSOLE.print(dockPointsIdx);
@@ -1237,7 +1237,7 @@ bool Map::nextDockPoint(bool sim){
           dockPointsIdx++; 
           trackReverse = false;
           
-          CONSOLE.print("map: nextDockPoint: dockPointsIdx: ");
+          CONSOLE.print("Map::nextDockPoint: dockPointsIdx: ");
           CONSOLE.print(dockPointsIdx);
           CONSOLE.print(" dockPoints.numPoints: ");
           CONSOLE.print(dockPoints.numPoints);
@@ -1247,6 +1247,14 @@ bool Map::nextDockPoint(bool sim){
           // Svol0: only the last dockingpoints (value from "DOCK_SLOW_ONLY_LAST_POINTS") will be done with slow speed
           if ((dockPoints.numPoints > abs(DOCK_SLOW_ONLY_LAST_POINTS)) && 
           (dockPointsIdx < (dockPoints.numPoints - abs(DOCK_SLOW_ONLY_LAST_POINTS))) && (DOCK_SLOW_ONLY_LAST_POINTS != 0) ){
+            if (trackSlow == true){
+              CONSOLE.print("Map::nextDockPoint: switched to slow track speed at dockPointsIdx: ");
+              CONSOLE.print(dockPointsIdx);
+              CONSOLE.print(" dockPoints.numPoints: ");
+              CONSOLE.print(dockPoints.numPoints);
+              CONSOLE.print(" trackReverse: ");
+              CONSOLE.println(trackReverse);
+            }
             if (!sim) trackSlow = false;
           }
           if (!sim) useGPSfixForPosEstimation = true;
@@ -1264,7 +1272,7 @@ bool Map::nextDockPoint(bool sim){
   } else if (shouldMow){
     // should undock
     if (dockPointsIdx > 0){
-      CONSOLE.print("!!! map: act dockPointsIdx :");
+      CONSOLE.print("Map::nextDockPoint: actual dockPointsIdx :");
       CONSOLE.println(dockPointsIdx);
 
       if (!sim) lastTargetPoint.assign(targetPoint);
@@ -1280,13 +1288,28 @@ bool Map::nextDockPoint(bool sim){
         if (!sim) useGPSfixForDeltaEstimation = !DOCK_IGNORE_GPS;
         if (!sim) useGPSfloatForPosEstimation = false;  
         if (!sim) useGPSfloatForDeltaEstimation = false;
+        CONSOLE.print("Map::nextDockPoint: dockPointsIdx: ");
+        CONSOLE.print(dockPointsIdx);
+        CONSOLE.print(" dockPoints.numPoints: ");
+        CONSOLE.print(dockPoints.numPoints);
+        CONSOLE.print(" trackSlow: ");
+        CONSOLE.print(trackSlow);
+        CONSOLE.print(" trackReverse: ");
+        CONSOLE.print(trackReverse);
+        CONSOLE.print(" DOCK_IGNORE_GPS: ");
+        CONSOLE.println(DOCK_IGNORE_GPS);
+
 
         // to avoid "gps no speed => obstacle!" error
         if ((dockGpsRebootState == 0) && (dockGpsRebootState != 10)){
           dockGpsRebootState  = 10;
-          CONSOLE.println("map: gps-reboot resetLinearMotionMeasurement");      
+          CONSOLE.println("Map::nextDockPoint: to avoid gps no speed => obstacle! error resetLinearMotionMeasurement");      
         }
-        if ((DOCK_IGNORE_GPS) && (DOCK_POINT_GPS_REBOOT != 0)) blockKidnapByUndocking = true; // block Kidnap detection
+        if ((DOCK_IGNORE_GPS) && (DOCK_POINT_GPS_REBOOT != 0)){
+          blockKidnapByUndocking = true; // block Kidnap detection
+          CONSOLE.print("Map::nextDockPoint: blockKidnapByUndocking: ");      
+          CONSOLE.println(blockKidnapByUndocking);      
+        }
       }
       else {
         if (!sim) trackReverse = false;  
@@ -1301,15 +1324,17 @@ bool Map::nextDockPoint(bool sim){
       // Svol0: activates gps-reboot by reaching specified dockingpoint (please see "DOCK_POINT_GPS_REBOOT" in config.h)
       if (((dockPointsIdx + 2) == (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT)) && DOCK_POINT_GPS_REBOOT != 0)){
         dockGpsRebootState = 1;                    // activate gps-reboot in robot.cpp
-        CONSOLE.print("map: gps-reboot by undocking at dockingpoint :");
+        CONSOLE.print("Map::nextDockPoint: gps-reboot by undocking at dockingpoint :");
         CONSOLE.println(dockPointsIdx);
       }
 
       // Svol0: activate kidnap detection again
       if ((dockPointsIdx == 0) || ((dockPointsIdx + 3) == (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT)) && DOCK_POINT_GPS_REBOOT != 0)) {
-        CONSOLE.print("map: enable kidnap detection at dockPointsIdx: ");
-        CONSOLE.println(dockPointsIdx);
         blockKidnapByUndocking = false; // reset block Kidnap detection
+        CONSOLE.print("Map::nextDockPoint: enable kidnap detection at dockPointsIdx: ");
+        CONSOLE.print(dockPointsIdx);
+        CONSOLE.print(" blockKidnapByUndocking: ");      
+        CONSOLE.println(blockKidnapByUndocking);      
       }
             
       return true;
@@ -1326,6 +1351,10 @@ bool Map::nextDockPoint(bool sim){
         if (!sim) useGPSfloatForPosEstimation = true;    
         if (!sim) useGPSfloatForDeltaEstimation = true;    
         if (!sim) useIMU = true;    
+        CONSOLE.print("Map::nextDockPoint: undocking finished! trackReverse:");
+        CONSOLE.print(trackReverse);
+        CONSOLE.print(" trackSlow: ");      
+        CONSOLE.println(trackSlow);      
         return true;
       } else return false;        
     }  

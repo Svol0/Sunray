@@ -20,6 +20,9 @@ float stanleyTrackingNormalP = STANLEY_CONTROL_P_NORMAL;
 float stanleyTrackingSlowK = STANLEY_CONTROL_K_SLOW;
 float stanleyTrackingSlowP = STANLEY_CONTROL_P_SLOW;    
 
+float linearOut = 0;
+float angularOut = 0;
+
 float targetDist = 0;
 
 float setSpeed = 0.1; // linear speed (m/s)
@@ -197,12 +200,12 @@ void trackLine(bool runControl){
       // Svol0: continue docking if gps solution gets lost by driving to the last point (normal if dockingstation is under a roof)
       if (allowDockLastPointWithoutGPS == true){
         if (!warnDockWithoutGpsTrg){
-          CONSOLE.println("WARN: Continue docking with no gps solution!");
+          CONSOLE.println("LineTracker.cpp WARN: Continue docking with no gps solution!");
           warnDockWithoutGpsTrg = true;
         }
       } else {
         if (!warnDockWithoutGpsTrg){
-          CONSOLE.println("WARN: no gps solution!");
+          CONSOLE.println("LineTracker.cpp WARN: no gps solution!");
           warnDockWithoutGpsTrg = true;
         }
         activeOp->onGpsNoSignal();
@@ -272,7 +275,7 @@ void trackLine(bool runControl){
           dockGpsRebootState      = 0; // finished
      //     blockKidnapByUndocking  = false;  // enable Kidnap detection
       //    maps.setLastTargetPoint(stateX, stateY);  // Manipulate last target point to avoid "KIDNAP DETECT"
-          CONSOLE.println("LineTracker.cpp  dockGpsRebootState - gps-pos is stable; continue undocking;");
+          CONSOLE.println("LineTracker.cpp  dockGpsRebootState - gps-pos is stable; continue undocking/docking;");
         }
         if (gps.solution != SOL_FIXED) dockGpsRebootState = 2; // wait for gps-fix again
         if (dockGpsRebootDistGpsTrg == true){ // gps position is changing to much
@@ -311,6 +314,15 @@ void trackLine(bool runControl){
     }
   }
 
+  // if stopbutton is pressed, the mower should stop movement to avoid running behind the mower to keep it pressed
+  if (stopButton.triggered()){
+    linear = 0;
+    angular = 0;  
+  }
+
+linearOut = linear;
+angularOut = angular;
+  
   if (runControl){
     motor.setLinearAngularSpeed(linear, angular);      
     if (detectLift()) mow = false; // in any case, turn off mower motor if lifted 
