@@ -146,6 +146,7 @@ unsigned long nextSaveTime = 0;
 
 unsigned long bumperStayActivTime = 0;    // duration, the bumper stays triggered
 unsigned long lastCallBumperObstacle = 0; // last call for bumper.obstacle
+bool rainTriggerMsg = false;              // place only one rain trigger message in console output
 
 bool wifiFound = false;
 char ssid[] = WIFI_SSID;      // your network SSID (name)
@@ -980,9 +981,12 @@ void run(){
     else {      
       if (RAIN_ENABLE){
         if (rainDriver.triggered()){
-          CONSOLE.println("RAIN TRIGGERED");
+          if (rainTriggerMsg == false){
+            CONSOLE.println("RAIN SENSOR TRIGGERED");
+            rainTriggerMsg  = true; // only one message in console output
+          }
           activeOp->onRainTriggered();
-        }
+        } else rainTriggerMsg = false;
       }    
       if (battery.shouldGoHome()){
         if (DOCKING_STATION){
