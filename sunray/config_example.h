@@ -154,7 +154,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define MOTOR_MAX_SPEED         0.50          // limitation for setSpeed value from Sunray-App (0,01 to 0,59m/sec are possible) to avoid to high speed setting by mistake   // SOEW_NEU
 #define MOTOR_MIN_SPEED         0.05          // minimal driving speed
 
-#define ACC_RAMP                1500 //ms acceleration time from 0m/s to MOTOR_MAX_SPEED
+#define ACC_RAMP                2000 //ms acceleration time from 0m/s to MOTOR_MAX_SPEED
 #define DEC_RAMP                1000 //ms deceleration time from MOTOR_MAX_SPEED to 0m/s
 
 // ----- gear motors --------------------------------------------------
@@ -169,12 +169,12 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 //#define MOTOR_DRIVER_BRUSHLESS_GEARS_BLDC8015A 1   // uncomment for brushless BLDC8015A driver and gear/traction motors
 //#define MOTOR_DRIVER_BRUSHLESS_GEARS_JYQD 1   // uncomment for brushless JYQD driver and gears/traction motor
 
-#define MOTOR_FAULT_CURRENT 6.0    // gear motors fault current (amps)
+#define MOTOR_FAULT_CURRENT 3.0    // gear motors fault current (amps)
 #define MOTOR_OVERLOAD_CURRENT 0.8    // gear motors overload current (amps)
 #define MAX_MOTOR_ERROR_COUNTER 3     // max retrys in case of motor errors until mower gives up
 
-//#define USE_LINEAR_SPEED_RAMP  true      // use a speed ramp for the linear speed
-#define USE_LINEAR_SPEED_RAMP  false      // do not use a speed ramp 
+#define USE_LINEAR_SPEED_RAMP  true      // use a speed ramp for the linear speed
+//#define USE_LINEAR_SPEED_RAMP  false      // do not use a speed ramp 
 
 // It is possible to navigate the mower by touch-joystick in sunray-app. In some cases it could be neccessary to navigate the mower very soften, especially when your connected by
 // wifi to the mower. If parameter is set to true, the speed value from app will be used for maximum speed by joystick control. To navigate soften, 
@@ -210,13 +210,12 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 // certain time (normally a few seconds) and the mower will try again and set a virtual obstacle after too many tries
 // On the other hand, the overload detection will detect situations the fault signal cannot detect: slightly higher current for a longer time 
 
-
 // choose ticks per cutting disc revolution :
 #define MOW_TICKS_PER_REVOLUTION  12 / 2   // odometry ticks per cutting disc revolution 
 
 
-#define MOW_FAULT_CURRENT 8.0       // mowing motor fault current (amps)
-#define MOW_OVERLOAD_CURRENT 3.0    // mowing motor overload current (amps)
+#define MOW_FAULT_CURRENT 2.5       // mowing motor fault current (amps)
+#define MOW_OVERLOAD_CURRENT 2.0    // mowing motor overload current (amps)
 
 // should the direction of mowing motor toggle each start? (yes: true, no: false)
 #define MOW_TOGGLE_DIR       true
@@ -277,7 +276,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 // re-enter absolute position source etc) !
 // see Wiki on how to install the WIFI module and configure the WIFI jumpers:
 // https://wiki.ardumower.de/index.php?title=Ardumower_Sunray#Bluetooth_BLE_UART_module
-
+#define USE_ESP8266 true            // If you use ESP32 module set this to false
 #define START_AP  false             // should WIFI module start its own access point? 
 #define WIFI_IP   192,168,2,15      // choose IP e.g. 192,168,4,1  (comment out for dynamic IP/DHCP) - NOTE: use commans instead of points
 #define WIFI_SSID "myssid"            // choose WiFi network ID
@@ -350,7 +349,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define BUMPER_ENABLE true
 //#define BUMPER_ENABLE false
 #define BUMPER_DEADTIME 1000  // linear motion dead-time (ms) after bumper is allowed to trigger
-#define BUMPER_TRIGGER_DELAY  100 // bumper must be active for (ms) to trigger
+#define BUMPER_TRIGGER_DELAY  1 // bumper must be active for (ms) to trigger
 #define BUMPER_MAX_TRIGGER_TIME 30         // if bumpersensor stays permanent triggered mower will stop with bumper error (time in seconds; 0 = disabled)
 
 
@@ -447,8 +446,8 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define DOCK_IGNORE_GPS false     // use GPS fix in docking station and IMU for GPS float/invalid
 //#define DOCK_IGNORE_GPS true     // ignore GPS fix in docking station and use IMU-only (use this if robot gets false GPS fixes in your docking station)
 
-#define DOCK_SLOW_ONLY_LAST_POINTS  2 // Svol0: dockingpoint number (counted from last dockingpoint) where slow speed will be used to reach the dockingstation (0 = all points will be reached with slow speed)
-#define DOCK_POINT_GPS_REBOOT       2 // Svol0: dockingpoint number (counted from last dockingpoint) where the gps will be rebooted and waited for gps-fix by undocking. 0 = no gps reboot by undocking
+#define DOCK_SLOW_ONLY_LAST_POINTS  1 // Svol0: dockingpoint number (counted from last dockingpoint) where slow speed will be used to reach the dockingstation (0 = all points will be reached with slow speed)
+#define DOCK_POINT_GPS_REBOOT       1 // Svol0: dockingpoint number (counted from last dockingpoint) where the gps will be rebooted and waited for gps-fix by undocking. 0 = no gps reboot by undocking
 
 //#define DOCK_AUTO_START true     // robot will automatically continue mowing after docked automatically
 #define DOCK_AUTO_START false      // robot will not automatically continue mowing after docked automatically

@@ -643,7 +643,7 @@ void start(){
   //maps.clipperTest();
     
   // initialize ESP module
-  startWIFI();
+  if (USE_ESP8266 == true) startWIFI();
   #ifdef ENABLE_NTRIP
     ntrip.begin();  
   #endif
