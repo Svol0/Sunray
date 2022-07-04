@@ -154,8 +154,13 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define MOTOR_MAX_SPEED         0.50          // limitation for setSpeed value from Sunray-App (0,01 to 0,59m/sec are possible) to avoid to high speed setting by mistake   // SOEW_NEU
 #define MOTOR_MIN_SPEED         0.05          // minimal driving speed
 
-#define ACC_RAMP                2000 //ms acceleration time from 0m/s to MOTOR_MAX_SPEED
-#define DEC_RAMP                1000 //ms deceleration time from MOTOR_MAX_SPEED to 0m/s
+//--- NEW LINEAR RAMP ---------------------------------------------------------------------------
+#define USE_LINEAR_SPEED_RAMP  true      // use a speed ramp for the linear speed
+//#define USE_LINEAR_SPEED_RAMP  false      // do not use a speed ramp 
+
+    #define ACC_RAMP                2000 //ms acceleration time from 0m/s to MOTOR_MAX_SPEED
+    #define DEC_RAMP                1000 //ms deceleration time from MOTOR_MAX_SPEED to 0m/s
+//-----------------------------------------------------------------------------------------------
 
 // ----- gear motors --------------------------------------------------
 // for brushless motors, study the sections (drivers, adapter, protection etc.) in the Wiki (https://wiki.ardumower.de/index.php?title=DIY_Brushless_Driver_Board)
@@ -173,8 +178,6 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define MOTOR_OVERLOAD_CURRENT 0.8    // gear motors overload current (amps)
 #define MAX_MOTOR_ERROR_COUNTER 3     // max retrys in case of motor errors until mower gives up
 
-#define USE_LINEAR_SPEED_RAMP  true      // use a speed ramp for the linear speed
-//#define USE_LINEAR_SPEED_RAMP  false      // do not use a speed ramp 
 
 // It is possible to navigate the mower by touch-joystick in sunray-app. In some cases it could be neccessary to navigate the mower very soften, especially when your connected by
 // wifi to the mower. If parameter is set to true, the speed value from app will be used for maximum speed by joystick control. To navigate soften, 
@@ -465,6 +468,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define STANLEY_CONTROL_P_SLOW    3.0   // 3.0 for path tracking control (angular gain) when docking tracking
 #define STANLEY_CONTROL_K_SLOW    0.1   // 0.1 for path tracking control (lateral gain) when docking tracking
 
+#define MAP_STANLEY_CONTROL true        // settings of the stanley control parameter will be mapped from slow speed (MOTOR_MIN_SPEED) to maximum speed (MOTOR_MAX_SPEED)
 
 // ----- other options --------------------------------------------
 
