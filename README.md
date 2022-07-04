@@ -1,3 +1,9 @@
+# IMPORTANT NOTE!
+**Do not use this master, it should be the same like the original master from Ardumower.
+You are welcome to use the branches of this fork, but you will do this on your own risk!**
+
+**PLEASE HAVE A LOOK TO THE "VersionInfo.md" IN THE MAIN DIRECTORY OF THE BRANCH, TO SEE WHICH FEATURES ARE ADDED AND HOW TO USE THEM**
+***
 # Sunray
 
 ## Download
