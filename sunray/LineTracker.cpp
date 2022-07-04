@@ -20,9 +20,6 @@ float stanleyTrackingNormalP = STANLEY_CONTROL_P_NORMAL;
 float stanleyTrackingSlowK = STANLEY_CONTROL_K_SLOW;
 float stanleyTrackingSlowP = STANLEY_CONTROL_P_SLOW;    
 
-float linearOut = 0;
-float angularOut = 0;
-
 float targetDist = 0;
 
 float setSpeed = 0.1; // linear speed (m/s)
@@ -333,9 +330,6 @@ void trackLine(bool runControl){
     angular = 0;  
   }
 
-linearOut = linear;
-angularOut = angular;
-  
   if (runControl){
     motor.setLinearAngularSpeed(linear, angular);      
     if (detectLift()) mow = false; // in any case, turn off mower motor if lifted 
