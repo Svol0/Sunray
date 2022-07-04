@@ -1,3 +1,68 @@
+## Diese Version entspricht der Sunray Release Version 1.0.276 mit zusätzlichen Funktionen:
+- Damit diese Version kompiliert werden kann, wird zusätzlich die Bibliothek „RunningMedian“ von Rob Tillaart benötigt. Diese kann in der Arduino IDE durch den Bibliotheksverwalter (Strg+Umschalt+I) installieren werden. Als Version habe ich die 0.3.6 genommen.
+- Die Parameter, die in dieser Auflistung erwähnt werden sind in der config_example.h enthalten. Eine kurze Beschreibung und die Einheit des Parameters ist meistens vorhanden.
+---
+### Geänderte LINEAR_RAMP
+Der Mäher beschleunigt und verzögert mit den unter ACC_RAMP und DEC_RAMP einstellbaren Rampen. 
+Das Erreichen der Zielposition bleibt dabei genau, da der benötigte Bremsweg in Abhängigkeit der aktuellen Fahrgeschwindigkeit und der Verzögerungsrampe berechnet wird.
+Die einstellbaren Zeiten beziehen sich auf das erreichen der Endgeschwindigkeit, die unter MOTOR_MAX_SPEED eingestellt werden muss.
+Alle anderen Geschwindigkeitswerte für die Fahrantriebe sollten höchstens gleich, oder kleiner gewählt werden. Siehe dazu *GESCHWINDIGKEITS- UND ZEITWERTE*
+Die Geschwindigkeit MOTOR_MIN_SPEED sollte so eingestellt werden, dass der Mäher sich noch sicher damit bewegen kann, da diese mit zur Anfahrt des Zielpunktes verwendet wird.  
+In folgenden Situationen wird der Mäher ohne Bremsrampe sofort gestoppt:
+- Auslösen des Bumpers
+- GPS-Signal wechselt zu INVALID (nur wenn REQUIRE_VALID_GPS auf true)
+- Kidnapping Funktion ausgelöst wird (nur wenn KIDNAP_DETECT auf true)
+- Motorstörungen
+
+Beispiel für ACC_RAMP = 2000 und MOTOR_MAX_SPEED = 0.50  
+Diese Einstellung bewirkt, dass der Mäher innerhalb von 2 Sekunden aus dem Stand bis zu der Endgeschwindigkeit von 0,5m/s beschleunigt wird.
+- ACC_RAMP  
+Beschleunigungsrampe in Millisenkunden die der Mäher aus dem Stillstand bis zur MOTOR_MAX_SPEED benötigt
+- DEC_RAMP  
+Verzögerungsrampe in Millisekunden die der Mäher benötigt, um von der Geschwindigkeit MOTOR_MAX_SPEED bis zum Stillstand zu kommen.
+
+
+### GESCHWINDIGKEITS- UND ZEITWERTE von MrTreeBark
+Folgende Werte für die Fahr-, Dreh-, Beschleunigungs- und Verzögerungsgeschwindigkeit sind in die config.h aufgenommen:
+- MOW_SPINUPTIME  
+ist die Zeit in Millisekunden, die der Mäher nach starten des Mähmotors wartet, bis er losfährt (damit die Mähscheibe schon auf Geschwindigkeit ist, bevor Sie auf das Gras trifft
+- OVERLOADSPEED  
+Geschwindigkeit in m/s auf die die Fahrantriebe gedrosselt werden, wenn einer der Fahrantriebe den unter MOTOR_OVERLOAD_CURRENT eingestellten Wert oder der Mähmotor den unter MOW_OVERLOAD_CURRENT eingestellten Wert überschreitet
+- ROTATETOTARGETSPEED  
+Die Drehgeschwindigkeit in rad mit der der Mäher sich auf der Stelle Richtung Ziel dreht. Kann wie folgt berechnet werden:  
+Gewünschte Winkeländerung/Sekunde / 180 * Pi  
+Beispiel: Der Mäher soll sich pro Sekunde um 45Grad drehen (45/180) x 3,14 = 0,785
+- TRACKSLOWSPEED  
+Geschwindigkeit in m/s mit der der Mäher den Weg von und zur Ladestation fährt. Bei Verwendung der Funktion "GPS-REBOOT AN BESTIMMTEN DOCKINGPUNKT" wird diese Geschwindigkeit nicht für die komplette Strecke verwendet.
+- APPROACHWAYPOINTSPEED  
+Geschwindigkeit in m/s mit der sich der Mäher die letzten 25cm bis zum Erreichen der Zielposition nähert.  
+Wird nur verwendet, wenn LINEAR_RAMP nicht aktiviert ist.
+- FLOATSPEED  
+Geschwindigkeit in m/s mit der der Mäher maximal Fährt, wenn nur GPS-Float vorhanden ist.
+- SONARSPEED  
+Geschwindigkeit in m/s mit der der Mäher weiterfährt, wenn das Sonar z.B. durch ein Hindernis ausgelöst wird.
+- DOCKANGULARSPEED  
+Die Drehgeschwindigkeit in rad mit der der Mäher sich beim fahren von und zur Ladestation auf der Stelle Richtung Ziel dreht. Berechnung siehe ROTATETOTARGETSPEED
+- OBSTACLEAVOIDANCESPEED  
+Geschwindigkeit in m/s mit der der Mäher versucht ein Hindernis zu umfahren.
+- OBSTACLEAVOIDANCEWAY  
+Der Weg in Metern die der Mäher Rückwärts vom Hindernis zurückfährt.
+ -MOTOR_MAX_SPEED  
+ Geschwindigkeit in m/s die der Mäher maximal Fahren darf. Da in der Sunray-App per Schieberegler Werte zwischen 0,01 und 0,59m/s eingestellt werden können, ist diese Begrenzung zur Sicherheit so zu Wählen, dass der Mäher noch Ordnungsgemäß fährt und eine versehentliche Überlastung vermieden wird.
+- MOTOR_MIN_SPEED  
+Geschwindigkeit in m/s bei der sich der Mäher noch sicher Bewegt.
+
+### ZUORDNUNG VON SPEED ALS MAXIMALE GESCHWINDIGKEIT FÜR DEN APP-JOYSTICK
+Mit setzen des Parameter USE_SETSPEED_FOR_APPJOYSTICK auf true wird die mit dem Schieberegler eingestellte Geschwindigkeit (aber höhchstens bis MOTOR_MAX_SPEED) für den maximalausschlag des Joysticks in der Sunray-App verwendet. Will man sehr genau Navigieren, wählt man über den Schieberegler eine kleine Geschwindigkeit, will man weite Strecken überbrücken wählt man eine große Geschwindigkeit.
+
+### KONTROLLE OB DER BUMPER BLOCKIERT IST
+Es kann vorkommen, dass ein Ast oder anderer Fremdkörker den Bumper so blockiert, dass dieser die ganze Zeit betätigt bleibt. Der Mäher versucht dann immer wieder zurück zu fahren und auszuweichen, bis er im schlimsten Fall außerhalb des Perimeters landet.
+Mit dem Parameter BUMPER_MAX_TRIGGER_TIME kann eine maximale permanente Betätigungsdauer in Sekunden festgelegt werden. Bei Überschreitung wird ein Bumper-Fehler ausgelöst und der Mäher bleibt stehen. Ein Wert non 0 (Null) deaktiviert die Überwachung.
+
+### AUSLÖSEVERZÖGERUNG DES BUMPER
+Mit dem Parameter BUMPER_TRIGGER_DELAY kann die Verzögerung in Millisekunden für das Auslösen des Bumpers eingestellt werden. Wenn der Bumper z.B. nur kurz durch einen etwas stärkeren Grashalm ausgelöst wird, kann durch den hier Eingestellten Wert dieses einmalige Ereignis unterdrückt werden. Steht der Wert z.B. auf 200, so würde kein Hindernis erkannt werden, wenn der Bumper kürzer als 200ms betätigt wird. Wird die Zeit überschritten, wird die Hindernisumfahrung aktiviert.
+
+
 ### This Version is a fork from the sunray release version 1.0.276 with the following added options:
 - **Set error if bumper stays permanently triggered:**
 set bumper error in case of continious triggering (time can be adjusted in config.h "BUMPER_MAX_TRIGGER_TIME".
