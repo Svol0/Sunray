@@ -21,7 +21,7 @@ Beschleunigungsrampe in Millisenkunden die der Mäher aus dem Stillstand bis zur
 - **DEC_RAMP**  
 Verzögerungsrampe in Millisekunden die der Mäher benötigt, um von der Geschwindigkeit **MOTOR_MAX_SPEED** bis zum Stillstand zu kommen.
 
-
+---
 ### GESCHWINDIGKEITS- UND ZEITWERTE von MrTreeBark
 Folgende Werte für die Fahr-, Dreh-, Beschleunigungs- und Verzögerungsgeschwindigkeit sind in die **config.h** aufgenommen:
 - **MOW_SPINUPTIME**  
@@ -52,16 +52,20 @@ Der Weg in Metern die der Mäher Rückwärts vom Hindernis zurückfährt.
 - **MOTOR_MIN_SPEED**  
 Geschwindigkeit in m/s bei der sich der Mäher noch sicher Bewegt.
 
+---
 ### SKALIERUNG VON SPEED ALS MAXIMALE GESCHWINDIGKEIT FÜR DEN APP-JOYSTICK
 Mit setzen des Parameter **USE_SETSPEED_FOR_APPJOYSTICK** auf true wird die mit dem Schieberegler eingestellte Geschwindigkeit (aber höhchstens bis **MOTOR_MAX_SPEED**) für den maximalausschlag des Joysticks in der Sunray-App verwendet. Will man sehr genau Navigieren, wählt man über den Schieberegler eine kleine Geschwindigkeit, will man weite Strecken überbrücken wählt man eine große Geschwindigkeit.
 
+---
 ### KONTROLLE OB DER BUMPER BLOCKIERT IST
 Es kann vorkommen, dass ein Ast oder anderer Fremdkörker den Bumper so blockiert, dass dieser die ganze Zeit betätigt bleibt. Der Mäher versucht dann immer wieder zurück zu fahren und auszuweichen, bis er im schlimsten Fall außerhalb des Perimeters landet.
 Mit dem Parameter **BUMPER_MAX_TRIGGER_TIME** kann eine maximale permanente Betätigungsdauer in Sekunden festgelegt werden. Bei Überschreitung wird ein Bumper-Fehler ausgelöst und der Mäher bleibt stehen. Ein Wert von 0 (Null) deaktiviert die Überwachung.
 
+---
 ### AUSLÖSEVERZÖGERUNG DES BUMPER
 Mit dem Parameter **BUMPER_TRIGGER_DELAY** kann die Verzögerung in Millisekunden für das Auslösen des Bumpers eingestellt werden. Wenn der Bumper z.B. nur kurz durch einen etwas stärkeren Grashalm ausgelöst wird, kann durch den hier Eingestellten Wert dieses einmalige Ereignis unterdrückt werden. Steht der Wert z.B. auf 200, so würde kein Hindernis erkannt werden, wenn der Bumper kürzer als 200ms betätigt wird. Wird die Zeit überschritten, wird die Hindernisumfahrung aktiviert.
 
+---
 ### SKALIERUNG DER STANLEY-PARAMETER von MrTreeBark  
 Mit dem Parameter **MAP_STANLEY_CONTROL** auf true werden die Stanley-Parameter für die langsame (**DOCKANGULARSPEED**) und die normale (**MOTOR_MAX_SPEED**) linear über den gesamten Geschwindigkeitsbereich von **MOTOR_MIN_SPEED** bis **MOTOR_MAX_SPEED** im Verhältnis zugeordnet. Dieses sollte zu einem deutlich besserem Regelverhalte führen, da die Stanley-Werte der Geschwindigkeit entsprechend skaliert werden.  
 **Beispiel:**  
@@ -77,6 +81,7 @@ Mit dem Parameter **MAP_STANLEY_CONTROL** auf true werden die Stanley-Parameter 
  0.25 ---> 0.5 ---> 1.0  
  0.50 ---> 1.0 ---> 1.0  
 
+---
 ### MÄHMOTORTEST
 Der Mähmotortest kann per serial monitor mit Kommando AT+D aktiviert werden. Über den serial monitor werden dabei Informationen für den Ablauf des Testes ausgegeben.
 Beschreibung des Ablaufs:
