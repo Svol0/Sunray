@@ -77,6 +77,21 @@ Mit dem Parameter **MAP_STANLEY_CONTROL** auf true werden die Stanley-Parameter 
  0.25 ---> 0.5 ---> 1.0  
  0.50 ---> 1.0 ---> 1.0  
 
+### MÄHMOTORTEST
+Der Mähmotortest kann per serial monitor mit Kommando AT+D aktiviert werden. Über den serial monitor werden dabei Informationen für den Ablauf des Testes ausgegeben.
+Beschreibung des Ablaufs:
+- AT+D in der Konsole eingeben
+- START/STOP Taste mind. 5 Sekunden gedrückt halten, bis ein akustisches Signal ertönt
+- In weniger als 10 Sekunden wird der Mähmotor gestartet. Akustische Signale weisen als Warnung darauf hin.
+- der Mähmotor wird auf einen PWM-Wert von 100 langsam hochbeschleunigt
+- nach erreichen der Geschwindigkeit ertönt ein kurzer Signalton
+- alle 10 Sekunden wird jetzt der PWM-Wert um 5 erhöht, bis maximal 255. Bei jeder Erhöhung ertönt ein kurzer Signalton.
+- der Test kann durch drücken der START/STOP Taste jederzeit gestoppt werden. Der Mähmotor läuft dann an einer kurzen Rampe bis zum stopp runter
+- falls man die verdindung zum serial monitor unterbrochen hatte, kann man diese jetzt wieder herstellen um den zuletzt gestesten PWM-Wert auslesen zu können.
+Dafür hat man ca. 2 Minuten Zeit. Sobald man die Verdindung wieder hergestellt hat, kann man durch drücken der START/STOP-Taste die Wartezeit unterbrechen.
+
+Dieser Test ist hauptsächlich dafür gedacht, die Lautstärke des Mähers beim Mähen testen zu können, um eine für sich (und die Nachbarn ;-) ) akzeptablen Geschwindigkeit zu ermitteln. Der Ermittelte PWM-Wert kann dann in der **config.h** bei **MAX_MOW_RPM** eingetragen werden. 
+
 
 ### This Version is a fork from the sunray release version 1.0.276 with the following added options:
 - **Set error if bumper stays permanently triggered:**
