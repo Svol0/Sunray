@@ -891,7 +891,7 @@ void Motor::dumpOdoMowTicks(){
   float lp = 0.9; // 0.995
   motorMowRpmCurrLP = lp * motorMowRpmCurrLP + (1.0-lp) * motorMowRpmCurr;
 
-  CONSOLE.print("motor.cpp Motor::testMow: pwmMow: ");
+  CONSOLE.print(" pwmMow: ");
   CONSOLE.print(pwmMowTest);
   CONSOLE.print(" | RpmCurr: ");
   CONSOLE.print(motorMowRpmCurr);
@@ -957,13 +957,11 @@ void Motor::test(){
 
 //Svol0 TestMowMotor
 void Motor::testMow(){
-  CONSOLE.println("*****************************************************************************************************************************");
-  CONSOLE.println("motor.cpp Motor::testMow: - START WITH pwmMow = 100; VALUE INCREASES EVERY 10 SECONDS BY 5 TILL 'pwmMow = 255':");
   unsigned long nextMowSpeedChange = 0;
   int MowTestStep = 0;
   int RepeatCounter = 0;
   motorMowTicks = 0;
-  pwmMowTest    = 100;
+  pwmMowTest    = 0;
   int pwmMowMem = 0;
   unsigned long nextValueOut = 0; 
   
@@ -978,6 +976,13 @@ void Motor::testMow(){
           MowTestStep = 10;
         }
       }
+      if (MowTestStep == 12 || MowTestStep == 13){
+        if (digitalRead(pinButton) == LOW){
+          nextMowSpeedChange = millis();
+          MowTestStep = 14;
+        }
+      }
+
       sense();          
       buzzer.run();
       watchdogReset();
@@ -992,9 +997,11 @@ void Motor::testMow(){
       
       switch (MowTestStep) {
         case 0: // Infos out
-
-          CONSOLE.println("motor.cpp Motor::testMow: ATTENTION! TO START THE MOWMOTOR KEEP THE 'START/STOP BUTTON' PRESSED FOR AT LEAST 5 SECONDS!");
-          CONSOLE.println("motor.cpp Motor::testMow: THE MOWMOTOR CAN BE STOPPED BY PRESSING AGAIN THE 'START/STOP BUTTON'");
+          CONSOLE.println("*****************************************************************************************************************************");
+          CONSOLE.println("motor.cpp Motor::testMow:");
+          CONSOLE.println( "TEST STARTS WITH pwmMow = 100; VALUE INCREASES EVERY 10 SECONDS BY 5 TILL 'pwmMow = 255':");
+          CONSOLE.println(" ATTENTION! TO START THE MOWMOTOR KEEP THE 'START/STOP BUTTON' PRESSED FOR AT LEAST 5 SECONDS!");
+          CONSOLE.println(" THE MOWMOTOR CAN BE STOPPED BY PRESSING AGAIN THE 'START/STOP BUTTON'");
           MowTestStep++;
           nextMowSpeedChange = millis();
           break;
@@ -1008,7 +1015,7 @@ void Motor::testMow(){
 
         case 2: // Bestätigungston Abspielen
           nextMowSpeedChange = millis() + 1000;
-          CONSOLE.println("motor.cpp Motor::testMow: PLEASE RELEASE THE 'START/STOP' TO GO ON WITH THE TEST");
+          CONSOLE.println(" PLEASE RELEASE THE 'START/STOP' TO GO ON WITH THE TEST");
           buzzer.sound(SND_READY, true);
           MowTestStep++;
           break;
@@ -1016,7 +1023,7 @@ void Motor::testMow(){
         case 3: // warten, dass die Taste wieder losgelassen wird
           if (millis() - nextMowSpeedChange > 1000){
             if (digitalRead(pinButton) == HIGH){
-              CONSOLE.println("motor.cpp Motor::testMow: ATTENTION! MOWMOTOR WILL START SPINN UP IN LESS THAN 10 SECONDS!");
+              CONSOLE.println(" ATTENTION! MOWMOTOR WILL START SPINN UP IN LESS THAN 10 SECONDS!");
               MowTestStep++;
             }
           }
@@ -1038,7 +1045,7 @@ void Motor::testMow(){
           if (millis() > nextMowSpeedChange){
             if (RepeatCounter <= 12) MowTestStep--;
             else {
-              CONSOLE.println("motor.cpp Motor::testMow: ATTENTION! MOWMOTOR IS SPINNING UP!");
+              CONSOLE.println(" ATTENTION! MOWMOTOR IS SPINNING UP!");
               MowTestStep++;
             }
           }          
@@ -1055,13 +1062,14 @@ void Motor::testMow(){
             speedPWM(0, 0, pwmMowTest);
             MowTestStep--;
           } else {
-              CONSOLE.println("motor.cpp Motor::testMow: MOWMOTOR SPINN UP COMPLETED. PWM-VALUE WILL INCREASE EVERY 10 SECOUNDS BY 5 TILL pwmMow = 255");    
+              CONSOLE.println(" MOWMOTOR SPINN UP COMPLETED. PWM-VALUE WILL INCREASE EVERY 10 SECOUNDS BY 5 TILL pwmMow = 255");    
               nextMowSpeedChange = millis() + 10000;
               MowTestStep++; // fertig hochgelaufen
           }
           break;
 
         case 8: // Alle 10 Sekunden wird der Mähmotor pwm-Wert um 5 erhöht
+          buzzer.sound(SND_READY, true);
           pwmMowTest = pwmMowTest + 5;
           if (pwmMowTest > 255){
             pwmMowTest = 255;
@@ -1081,7 +1089,7 @@ void Motor::testMow(){
 
         case 10:  // reduziere die Geschwindigkeit
           pwmMowMem = pwmMowTest;  // store last pwm-value
-          CONSOLE.println("motor.cpp Motor::testMow: MOWMOTOR IS SLOWING DOWN.");
+          CONSOLE.println(" MOWMOTOR IS SLOWING DOWN.");
           MowTestStep++;
           break;
 
@@ -1093,19 +1101,32 @@ void Motor::testMow(){
               nextMowSpeedChange = millis() + 10;
             }
           } else {
-            nextMowSpeedChange = millis() + 120000;
-            CONSOLE.println("motor.cpp Motor::testMow: YOU CAN ABORT THE DELAY OF 120 SEC BY PRESSING THE START/STOP BUTTON");
+            nextMowSpeedChange = millis();
+            RepeatCounter = 0;
             MowTestStep++;
           }
           break;
 
-        case 12:
-          if ((digitalRead(pinButton) == LOW) || (millis() > nextMowSpeedChange)) MowTestStep++;        
+        case 12: // Info wiederholt ausgeben
+          CONSOLE.println(" YOU CAN ABORT THE DELAY OF 120 SEC BY PRESSING THE START/STOP BUTTON");
+          nextMowSpeedChange = millis() + 5000;
+          buzzer.sound(SND_READY, true);
+          RepeatCounter++;
+          MowTestStep++;
+          break;
 
-         break;
+        case 13: // Warten
+          if (millis() > nextMowSpeedChange){
+            if (RepeatCounter <= 24) MowTestStep--;
+            else {
+              MowTestStep++;
+            }
+          }          
+          break;
 
-        case 13:
-          CONSOLE.print("motor.cpp Motor::testMow:  test done - please ignore any IMU/GPS errors. Last PWM Value before stop was: ");
+        case 14:
+          CONSOLE.println(" MOWMOTOR-TEST DONE - please ignore any IMU/GPS errors.");
+          CONSOLE.print(" LAST PWM VALUE BEFORE STOP WAS: ");
           CONSOLE.println(pwmMowMem);
           CONSOLE.println("*****************************************************************************************************************************");
           pwmMowTest = MIN_MOW_RPM;
@@ -1113,7 +1134,7 @@ void Motor::testMow(){
           nextMowSpeedChange = millis() + 5000;
           break;
 
-        case 14:
+        case 15:
           if (millis() > nextMowSpeedChange){
             mowTestActiv  = false; // enable speedlimitation
           }
@@ -1129,6 +1150,7 @@ void Motor::testMow(){
     CONSOLE.println("motor.cpp Motor::testMow: START/STOP BUTTON SEEMS TO BE BRIDGED. END OF TEST");
     CONSOLE.println("motor.cpp Motor::testMow: please ignore any IMU/GPS errors");
     CONSOLE.println("*****************************************************************************************************************************");
+    delay(4000);
   }
   
 } 
