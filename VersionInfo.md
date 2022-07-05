@@ -6,7 +6,7 @@
 Der Mäher beschleunigt und verzögert mit den unter **ACC_RAMP** und **DEC_RAMP** einstellbaren Rampen. 
 Das Erreichen der Zielposition bleibt dabei genau, da der benötigte Bremsweg in Abhängigkeit der aktuellen Fahrgeschwindigkeit und der Verzögerungsrampe berechnet wird.
 Die einstellbaren Zeiten beziehen sich auf das erreichen der Endgeschwindigkeit, die unter **MOTOR_MAX_SPEED** eingestellt werden muss.
-Alle anderen Geschwindigkeitswerte für die Fahrantriebe sollten höchstens gleich, oder kleiner gewählt werden. Siehe dazu *GESCHWINDIGKEITS- UND ZEITWERTE*
+Alle anderen Geschwindigkeitswerte für die Fahrantriebe sollten höchstens gleich, oder kleiner gewählt werden. Siehe dazu *GESCHWINDIGKEITS- UND ZEITWERTE*.  
 Die Geschwindigkeit **MOTOR_MIN_SPEED** sollte so eingestellt werden, dass der Mäher sich noch sicher damit bewegen kann, da diese mit zur Anfahrt des Zielpunktes verwendet wird.  
 In folgenden Situationen wird der Mäher ohne Bremsrampe sofort gestoppt:
 - Auslösen des Bumpers
@@ -97,6 +97,10 @@ Dafür hat man ca. 2 Minuten Zeit. Sobald man die Verdindung wieder hergestellt 
 
 Dieser Test ist hauptsächlich dafür gedacht, die Lautstärke des Mähers beim Mähen testen zu können, um eine für sich (und die Nachbarn ;-) ) akzeptablen Geschwindigkeit zu ermitteln. Der Ermittelte PWM-Wert kann dann in der **config.h** bei **MAX_MOW_RPM** eingetragen werden. 
 
+---
+### KALTSTART DES GPS-MODULS BEI GPS-REBOOT
+Wenn das GPS neu gestartet werden soll, wird normaler weise ein Warmstart durchgeführt. Bei einem Warmstart bleiben die bisherigen Satelliteninformationen erhalten. Es wird nur die Software für das GNSS auf dem GPS-Empfänger neu gestartet.  
+Bei einem Kaltstart werden gegenüber dem Warmstart auch alle Satellitenpositionen verworfen und müssen im Anschluss wieder neu erfasst werden. Wird der Parameter **GPS_COLD_REBOOT** auf true gesetzt, wird anstelle eines Warmstarts jedesmal ein Kaltstart durchgeführt.
 
 ### This Version is a fork from the sunray release version 1.0.276 with the following added options:
 - **Set error if bumper stays permanently triggered:**
