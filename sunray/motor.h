@@ -63,12 +63,14 @@ class Motor {
     void begin();
     void run();      
     void test();
+    void testMow(); //Svol0 TestMowMotor
     void plot();
     void enableTractionMotors(bool enable);
     void setLinearAngularSpeed(float linear, float angular, bool useLinearRamp = true);
     void setMowState(bool switchOn);   
     void stopImmediately(bool includeMowerMotor);
     float calcStopWay;  // calculated distance for stop from actual speed
+    float motorMowPWMSet;  
 
   protected: 
     float motorLeftRpmSet; // set speed
@@ -79,7 +81,7 @@ class Motor {
     float motorLeftRpmLast;
     float motorRightRpmLast;
     bool motorMowForwardSet; 
-    float motorMowPWMSet;  
+//    float motorMowPWMSet;  
 //    float motorMowPWMCurr; 
     int motorLeftPWMCurr;
     int motorRightPWMCurr;    
@@ -106,7 +108,8 @@ class Motor {
     bool checkCurrentTooHighError();    
     bool checkCurrentTooLowError();
     void sense();
-    void dumpOdoTicks(int seconds);    
+    void dumpOdoTicks(int seconds);
+    void dumpOdoMowTicks();    
     unsigned long lastLinearSetTime;  // Svol0: test
     float accStep;
     float decStep;
