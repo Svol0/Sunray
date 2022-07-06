@@ -367,9 +367,10 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 //#define CURRENT_FACTOR 1.98   // PCB1.4 (non-bridged INA169, max. 2.5A)
 //#define CURRENT_FACTOR 2.941  // PCB1.4 (bridged INA169, max. 5A)
 
-#define GEAR_DRIVER_IDLE_CURRENT 0.05  // value in ampere, that one gear motor driver takes in idle (gear motor is off)
-#define MOW_DRIVER_IDLE_CURRENT 0.13  // value in ampere, that the mow motor driver takes in idle (mow motor is off)
-#define BOARD_IDLE_CURRENT 0.25  // value in ampere, that the mow motor driver takes in idle (gear motor is off)
+//
+#define GEAR_DRIVER_IDLE_CURRENT  0.00  // value in ampere, that one gear motor driver takes in idle (gear motor is off)
+#define MOW_DRIVER_IDLE_CURRENT   0.00  // value in ampere, that the mow motor driver takes in idle (mow motor is off)
+#define BOARD_IDLE_CURRENT        0.00  // value in ampere, that the BOARD is using (measured differenc between App-Value and real measured value)
 
 #define GO_HOME_VOLTAGE   21.5  // start going to dock below this voltage
 // The battery will charge if both battery voltage is below that value and charging current is above that value.
