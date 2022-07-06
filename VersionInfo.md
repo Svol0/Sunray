@@ -95,13 +95,21 @@ Beschreibung des Ablaufs:
 - falls man die Verdindung zum Serial monitor unterbrochen hatte, kann man diese jetzt wieder herstellen um den zuletzt getesteten PWM-Wert auslesen zu können.
 Dafür hat man ca. 2 Minuten Zeit. Sobald man die Verbindung wieder hergestellt hat, kann man durch drücken der START/STOP-Taste die Wartezeit unterbrechen.
 
-Dieser Test ist hauptsächlich dafür gedacht, die Lautstärke des Mähers beim Mähen testen zu können, um eine für sich (und die Nachbarn ;-) ) akzeptablen Geschwindigkeit zu ermitteln. Der Ermittelte PWM-Wert kann dann in der **config.h** bei **MAX_MOW_RPM** eingetragen werden. 
+Dieser Test ist hauptsächlich dafür gedacht, die Lautstärke des Mähers beim Mähen testen zu können, um eine für sich (und die Nachbarn ;-) ) akzeptable Geschwindigkeit zu ermitteln. Der Ermittelte PWM-Wert kann dann in der **config.h** bei **MAX_MOW_RPM** eingetragen werden. 
 
 ---
 ### KALTSTART DES GPS-MODULS BEI GPS-REBOOT
 Wenn das GPS neu gestartet werden soll, wird normaler weise ein Warmstart durchgeführt. Bei einem Warmstart bleiben die bisherigen Satelliteninformationen erhalten. Es wird nur die Software für das GNSS auf dem GPS-Empfänger neu gestartet.  
 Bei einem Kaltstart werden gegenüber dem Warmstart auch alle Satellitenpositionen verworfen und müssen im Anschluss wieder neu erfasst werden. Wird der Parameter **GPS_COLD_REBOOT** auf true gesetzt, wird anstelle eines Warmstarts jedesmal ein Kaltstart durchgeführt.
 
+---
+### REBOOT DES GPS-MODULS BEI FIX TIMEOUT DURCH **GPS_REBOOT_RECOVERY_FLOAT_TIME**
+Es kann vorkommen, dass der Mäher nach Stop durch überschreiten der Fix timeout Zeit den Zustand Float auch nach vielen Minuten nicht mehr verlässt. In der Vergangenheit hat sich gezeigt, dass ein Reboot des GPS-Receivers gelegentlich einen neuen Fix bringen kann. Mit dem Parameter **GPS_REBOOT_RECOVERY_FLOAT_TIME** ist es jetzt möglich eine maximale Wartezeit in Minuten im Zustand Float festzulegen. Wird diese Wartezeit überschritten, erfolgt ein Reboot des GPS-Receivers. Wird als Wartezeit eine 0 (Null) eingetragen, erfolgt kein GPS-Reboot.  
+Für diese Funktion ist zusätzlich die Einstellung folgender Parameter erforderlich:
+#define **GPS_REBOOT_RECOVERY**  true
+#define **REQUIRE_VALID_GPS**  true
+
+---
 ### This Version is a fork from the sunray release version 1.0.276 with the following added options:
 - **Set error if bumper stays permanently triggered:**
 set bumper error in case of continious triggering (time can be adjusted in config.h "BUMPER_MAX_TRIGGER_TIME".
