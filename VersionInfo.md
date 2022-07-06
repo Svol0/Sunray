@@ -110,6 +110,36 @@ Für diese Funktion ist zusätzlich die Einstellung folgender Parameter erforder
 #define **REQUIRE_VALID_GPS**  true
 
 ---
+### KORREKTUR DER STROMVERBRAUCHSANZEIGE
+Der in der App angezeigte Stromverbrauch berücksichtigt nur die von den Motortreibern gelieferten Stromverbrauchswerte, da die PCB1.3 bzw. 1.4 über keine direkte Strommessung zur Ermittelung des Gesamtverbrauchs verfügt. Die auf dem Board verbaute INA misst nur den Ladestrom. Um dennoch eine einigermaßen genaue Stromverbrauchsanzeige zu bekommen, kann eine Anpassung durch Verwendung der folgenden Parameter durchgeführt werden:  
+- **GEAR_DRIVER_IDLE_CURRENT**  
+Verbrauchsvert in Ampere eines Motortreibers für den Fahrantrieb bei stehendem Motor.  
+- **MOW_DRIVER_IDLE_CURRENT**  
+Verbrauchsvert in Ampere des Mähmotortreibers bei stehendem Motor.  
+- **BOARD_IDLE_CURRENT**  
+Grundverbrauch in Ampere, den das hat Boards, wenn alle installiereten Komponenten eingeschaltet sind, ohne die Motortreiber.  
+
+Wenn man die Anpassung nicht vornehmen möchte, kann man die Werte einfach auf 0.00 lassen.  
+
+Um die Werte bei Verwendung von BL-Treibern zu ermitteln, kann wie folgt vorgegangen werden:  
+- Mäher spannungslos machen
+- Versorgungsstecker (P15, P18 und P37) der BL-Treiber abziehen.
+- Alle anderen Komponenten bleiben gesteckt.
+- Mäher einschalten und den Strombedarf z.B. mit einem Zangenamperemeter ermitteln.
+- Der ermittelte Stromwert kann bei **BOARD_IDLE_CURRENT** eingetragen werden.
+- Mäher wieder Spannungslos machen.
+- Versorgungsstecker P37 für den Mähmotortreiber wieder einstecken.
+- Mäher einschalten und den Strombedarf z.B. mit einem Zangenamperemeter ermitteln.
+- Den für **BOARD_IDLE_CURRENT** gemessenen Strom von dem soeben ermittelten Stromwert abziehen und bei **MOW_DRIVER_IDLE_CURRENT** eintragen.
+- Mäher wieder Spannungslos machen.
+- Versorgungsstecker P15 und P18 für die Fahrantriebe wieder anstecken.
+- Mäher einschalten und den Gesamtstrom ermitteln. Von diesem werden die Werte für **BOARD_IDLE_CURRENT** und **MOW_DRIVER_IDLE_CURRENT** abgezogen. Den Wert, den man dabei erhält durch 2 Teilen und bei **GEAR_DRIVER_IDLE_CURRENT** eintragen.
+
+Nachdem man anschließend das Projekt neu kompiliert und übertragen hat, sollte jetzt der in der App angezeigte Wert mit dem realen Wert übereinstimmen.
+
+---
+
+
 ### This Version is a fork from the sunray release version 1.0.276 with the following added options:
 - **Set error if bumper stays permanently triggered:**
 set bumper error in case of continious triggering (time can be adjusted in config.h "BUMPER_MAX_TRIGGER_TIME".
