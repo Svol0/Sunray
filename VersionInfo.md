@@ -83,7 +83,7 @@ Mit dem Parameter **MAP_STANLEY_CONTROL** auf true werden die Stanley-Parameter 
 
 ---
 ### MÄHMOTORTEST
-Der Mähmotortest kann per serial monitor mit Kommando AT+D aktiviert werden. Über den serial monitor werden dabei Informationen für den Ablauf des Testes ausgegeben.
+Der Mähmotortest kann per Serial monitor mit Kommando AT+D aktiviert werden. Über den Serial monitor werden dabei Informationen für den Ablauf des Testes ausgegeben.
 Beschreibung des Ablaufs:
 - AT+D in der Konsole eingeben
 - START/STOP Taste mind. 5 Sekunden gedrückt halten, bis ein akustisches Signal ertönt
@@ -92,8 +92,8 @@ Beschreibung des Ablaufs:
 - nach erreichen der Geschwindigkeit ertönt ein kurzer Signalton
 - alle 10 Sekunden wird jetzt der PWM-Wert um 5 erhöht, bis maximal 255. Bei jeder Erhöhung ertönt ein kurzer Signalton.
 - der Test kann durch drücken der START/STOP Taste jederzeit gestoppt werden. Der Mähmotor läuft dann an einer kurzen Rampe bis zum stopp runter
-- falls man die verdindung zum serial monitor unterbrochen hatte, kann man diese jetzt wieder herstellen um den zuletzt gestesten PWM-Wert auslesen zu können.
-Dafür hat man ca. 2 Minuten Zeit. Sobald man die Verdindung wieder hergestellt hat, kann man durch drücken der START/STOP-Taste die Wartezeit unterbrechen.
+- falls man die Verdindung zum Serial monitor unterbrochen hatte, kann man diese jetzt wieder herstellen um den zuletzt getesteten PWM-Wert auslesen zu können.
+Dafür hat man ca. 2 Minuten Zeit. Sobald man die Verbindung wieder hergestellt hat, kann man durch drücken der START/STOP-Taste die Wartezeit unterbrechen.
 
 Dieser Test ist hauptsächlich dafür gedacht, die Lautstärke des Mähers beim Mähen testen zu können, um eine für sich (und die Nachbarn ;-) ) akzeptablen Geschwindigkeit zu ermitteln. Der Ermittelte PWM-Wert kann dann in der **config.h** bei **MAX_MOW_RPM** eingetragen werden. 
 
