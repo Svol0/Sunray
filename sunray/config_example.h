@@ -408,6 +408,9 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define GPS_REBOOT_RECOVERY  true // allow GPS receiver rebooting (recommended - requires GPS wire fix above! otherwise firmware will stuck at boot!)
 //#define GPS_REBOOT_RECOVERY   false  // do not allow rebooting GPS receiver (no GPS wire fix required)
 
+#define GPS_REBOOT_RECOVERY_FLOAT_TIME 10  // time in minutes the gps-receiver will force a reboot, if mower stops and stay in float solution without getting fix again 
+                                           //(only working if GPS_REBOOT_RECOVERY and REQUIRE_VALID_GPS are true) value of 0 (zero) is disabling this feature
+
 #define GPS_COLD_REBOOT true // GPS receiver performs a cold reboot
 
 #define GPS_CONFIG   true     // configure GPS receiver (recommended - requires GPS wire fix above! otherwise firmware will stuck at boot!)

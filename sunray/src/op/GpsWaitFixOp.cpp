@@ -8,6 +8,9 @@
 #include "../../robot.h"
 #include "../../map.h"
 
+unsigned long waitRecoveryRebootFloatTime	= 0;
+bool RebootFloatTimeTrg	= false;
+
 String GpsWaitFixOp::name(){
     return "GpsWaitFix";
 }
@@ -15,6 +18,9 @@ String GpsWaitFixOp::name(){
 void GpsWaitFixOp::begin(){
     CONSOLE.println("WARN: no gps solution!");
     stateSensor = SENS_GPS_INVALID;
+	waitRecoveryRebootFloatTime	= millis();	// set time stamp
+	RebootFloatTimeTrg	= false;
+	
     //setOperation(OP_ERROR);
     //buzzer.sound(SND_STUCK, true);          
     
@@ -31,7 +37,16 @@ void GpsWaitFixOp::end(){
 
 void GpsWaitFixOp::run(){
     battery.resetIdle();
+	// try to reboot gps if mower stays to long in float without getting fix
+	if (GPS_REBOOT_RECOVERY == true && REQUIRE_VALID_GPS == true && GPS_REBOOT_RECOVERY_FLOAT_TIME > 0 && RebootFloatTimeTrg == false){
+		if (millis() > (waitRecoveryRebootFloatTime + (GPS_REBOOT_RECOVERY_FLOAT_TIME * 60000))){
+			RebootFloatTimeTrg	= true;
+			CONSOLE.println("GpsWaitFixOp: Waiting for GPS-fix exceeds GPS_REBOOT_RECOVERY_FLOAT_TIME. GPS-reboot is initiated!");
+			gps.reboot();  // try to recover from GPS float
+		}	
+	}		
     if (gps.solution == SOL_FIXED){
+		RebootFloatTimeTrg	= false;
         changeOp(*nextOp);
     }     
 }
