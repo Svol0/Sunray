@@ -67,11 +67,11 @@ void SerialRobotDriver::begin(){
     // IMU/fan power-on code (Alfred-PCB-specific) 
 
     // switch-on IMU via port-expander PCA9555     
-    ioExpanderOut(EX1_I2C_ADDR, EX1_IMU_POWER_PORT, EX1_IMU_POWER_PIN, true);
+    setImuPowerState(true);
     
     // switch-on fan via port-expander PCA9555     
-    ioExpanderOut(EX1_I2C_ADDR, EX1_FAN_POWER_PORT, EX1_FAN_POWER_PIN, true);
-
+    setFanPowerState(true);
+    
     // select IMU via multiplexer TCA9548A 
     ioI2cMux(MUX_I2C_ADDR, SLAVE_IMU_MPU, true);  // Alfred dev PCB with buzzer
     ioI2cMux(MUX_I2C_ADDR, SLAVE_BUS0, true); // Alfred dev PCB without buzzer    
@@ -152,6 +152,17 @@ bool SerialRobotDriver::setLedState(int ledNumber, bool greenState, bool redStat
   return true;
 }
 
+bool SerialRobotDriver::setFanPowerState(bool state){
+  CONSOLE.print("FAN POWER STATE ");
+  CONSOLE.println(state);
+  return ioExpanderOut(EX1_I2C_ADDR, EX1_FAN_POWER_PORT, EX1_FAN_POWER_PIN, state);
+}
+
+bool SerialRobotDriver::setImuPowerState(bool state){
+  CONSOLE.print("IMU POWER STATE ");
+  CONSOLE.println(state);  
+  return ioExpanderOut(EX1_I2C_ADDR, EX1_IMU_POWER_PORT, EX1_IMU_POWER_PIN, state);
+}  
 
 bool SerialRobotDriver::getRobotID(String &id){
   id = robotID;
@@ -165,7 +176,11 @@ bool SerialRobotDriver::getMcuFirmwareVersion(String &name, String &ver){
 }
 
 float SerialRobotDriver::getCpuTemperature(){
-  return cpuTemp;
+  #ifdef __linux__
+    return cpuTemp;
+  #else
+    return -9999;
+  #endif
 }
 
 void SerialRobotDriver::updateCpuTemperature(){
@@ -501,7 +516,12 @@ void SerialRobotDriver::run(){
   }
   if (millis() > nextTempTime){
     nextTempTime = millis() + 59000; // 59 sec
-    updateCpuTemperature();          
+    updateCpuTemperature();
+    if (cpuTemp < 65){      
+      setFanPowerState(false);
+    } else if (cpuTemp > 70){
+      setFanPowerState(true);
+    }
   }
   if (millis() > nextWifiTime){
     nextWifiTime = millis() + 7000; // 7 sec
@@ -633,9 +653,9 @@ void SerialBatteryDriver::updateBatteryTemperature(){
 
 float SerialBatteryDriver::getBatteryTemperature(){
   #ifdef __linux__
-    return batteryTemp;
+    return -9999; //batteryTemp; // linux reported bat temp not useful as seem to be constant 31 degree
   #else
-    return 0;
+    return -9999;
   #endif
 }
 
@@ -669,8 +689,12 @@ float SerialBatteryDriver::getBatteryVoltage(){
         }
       }
     }    
-    if (serialRobot.mcuCommunicationLost){      
-      if (!mcuBoardPoweredOn) return 0; // return zero volt if MCU PCB is switched-off (so we will be later requested to shutdown)
+    if (serialRobot.mcuCommunicationLost){
+      // return 0 volt if MCU PCB is connected and powered-off (Linux will shutdown)
+      //if (!mcuBoardPoweredOn) return 0;
+      // return 30 volts if MCU PCB is not connected (so Linux can be tested without MCU PCB 
+      // and will not shutdown if mower is not connected)      
+      return 30;      
     }
   #endif         
   return serialRobot.batteryVoltage;
@@ -707,6 +731,8 @@ void SerialBatteryDriver::keepPowerOn(bool flag){
       if (millis() > linuxShutdownTime){
         linuxShutdownTime = millis() + 10000; // re-trigger linux command after 10 secs
         CONSOLE.println("LINUX will SHUTDOWN!");
+        // switch-off fan via port-expander PCA9555     
+        serialRobot.setFanPowerState(false);
         Process p;
         p.runShellCommand("shutdown now");
       }

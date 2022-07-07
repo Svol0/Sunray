@@ -5,6 +5,9 @@
 
 #include <Arduino.h>
 #include <SD.h>
+#ifdef __linux__
+  #include <WiFi.h>
+#endif
 
 #include "robot.h"
 #include "StateEstimator.h"
@@ -205,6 +208,7 @@ void sensorTest(){
   while (millis() < stopTime){
     sonar.run();
     bumper.run();
+	liftDriver.run();
     if (millis() > nextMeasureTime){
       nextMeasureTime = millis() + 1000;      
       if (SONAR_ENABLE){
@@ -233,7 +237,13 @@ void sensorTest(){
         CONSOLE.print(((int)bumper.obstacle()));
         CONSOLE.print("\t");
        
-      } 
+      }
+	#ifdef ENABLE_LIFT_DETECTION 
+        CONSOLE.print("lift sensor (triggered): ");		
+        CONSOLE.print(((int)liftDriver.triggered()));	
+        CONSOLE.print("\t");							            
+    #endif  
+	
       CONSOLE.println();  
       watchdogReset();
       robotDriver.run();   
@@ -903,16 +913,21 @@ void run(){
   // temp
   if (millis() > nextTempTime){
     nextTempTime = millis() + 60000;    
-    stateTemp = batteryDriver.getBatteryTemperature();
-    statTempMin = min(statTempMin, stateTemp);
-    statTempMax = max(statTempMax, stateTemp);
+    float batTemp = batteryDriver.getBatteryTemperature();
+    float cpuTemp = robotDriver.getCpuTemperature();    
     CONSOLE.print("batTemp=");
-    CONSOLE.print(stateTemp,1);
-    float cpuTemp = robotDriver.getCpuTemperature();
+    CONSOLE.print(stateTemp,0);
     CONSOLE.print("  cpuTemp=");
     CONSOLE.print(cpuTemp,0);    
     //logCPUHealth();
-    CONSOLE.println();
+    CONSOLE.println();    
+    if (batTemp < -999){
+      stateTemp = cpuTemp;
+    } else {
+      stateTemp = batTemp;    
+    }
+    statTempMin = min(statTempMin, stateTemp);
+    statTempMax = max(statTempMax, stateTemp);    
   }
   
   // IMU
@@ -1025,6 +1040,12 @@ void run(){
       stateButton = 0;  // reset button state
       stateSensor = SENS_STOP_BUTTON;
       cmdSwitchOffRobot();
+    } else if (stateButton == 12){
+      stateButton = 0; // reset button state
+      stateSensor = SENS_STOP_BUTTON;
+      #ifdef __linux__
+        WiFi.startWifiProtectedSetup();
+      #endif
     }
 
     // update operation type      
