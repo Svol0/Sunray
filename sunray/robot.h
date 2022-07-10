@@ -34,7 +34,6 @@
 #include "PubSubClient.h"
 
 
-
 #define VER "Sunray,1.0.282 SE"
 
 // operation types
