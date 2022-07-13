@@ -151,6 +151,8 @@ extern bool dockGpsRebootDistGpsTrg;      // Svol0: trigger to check solid gps-f
 extern bool blockKidnapByUndocking;       // Svol0: kidnap detection is blocked by undocking without gps
 extern bool allowDockLastPointWithoutGPS; // Svol0: allow go on docking by loosing gps fix
 
+extern float targetDist;
+
 int freeMemory();
 void start();
 void run();

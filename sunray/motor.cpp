@@ -14,8 +14,22 @@
 
 void Motor::begin() {
 	pwmMax = 255;
-  pwmMaxMow = 255;
+ 
+  #ifdef MAX_MOW_RPM
+    if (MAX_MOW_RPM <= 255) {
+      pwmMaxMow = MAX_MOW_RPM;
+    }
+    else pwmMaxMow = 255;
+  #else 
+    pwmMaxMow = 255;
+  #endif
 
+  // calc ramp steps
+  accStep = ((float)MOTOR_MAX_SPEED * 20) / (float)ACC_RAMP;
+  decStep = ((float)MOTOR_MAX_SPEED *20) / (float)DEC_RAMP;
+  lastLinearSetTime = millis();
+  calcStopWay       = 0;
+  
   //ticksPerRevolution = 1060/2;
   ticksPerRevolution = TICKS_PER_REVOLUTION;
 	wheelBaseCm = WHEEL_BASE_CM;    // wheel-to-wheel distance (cm) 36
@@ -111,7 +125,43 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
    setLinearAngularSpeedTimeout = millis() + 1000;
    setLinearAngularSpeedTimeoutActive = true;
    if ((activateLinearSpeedRamp) && (useLinearRamp)) {
-     linearSpeedSet = 0.9 * linearSpeedSet + 0.1 * linear;
+   //  linearSpeedSet = 0.95 * linearSpeedSet + 0.05 * linear;
+
+      if (millis() >= lastLinearSetTime) {
+        if ((millis()+40) >= lastLinearSetTime) lastLinearSetTime = millis();
+        calcStopWay = (linearSpeedSet * DEC_RAMP) / 2000;
+        CONSOLE.print("setLinearAngularSpeed: last call: ");
+        CONSOLE.print((millis() - lastLinearSetTime));
+        CONSOLE.print(" calcStopWay: ");
+        CONSOLE.print(calcStopWay);
+        CONSOLE.print(" targetDist: ");
+        CONSOLE.print(targetDist);
+        CONSOLE.print("m | acc-step: ");
+        CONSOLE.print(accStep);
+        CONSOLE.print(" dec-step: ");
+        CONSOLE.print(decStep);
+        CONSOLE.print(" linearSpeedSet: ");
+        CONSOLE.print(linearSpeedSet);
+        CONSOLE.print(" linear: ");
+        CONSOLE.println(linear);
+
+        if (linear > 0) { // pos value
+          if (linearSpeedSet < 0) linearSpeedSet = linearSpeedSet + decStep; // noch pos
+          else if (linearSpeedSet < linear) linearSpeedSet = linearSpeedSet + accStep; // speed up
+          else linearSpeedSet = linearSpeedSet - decStep; // slow down
+        } else if (linear < 0) { // neg value
+            if (linearSpeedSet > 0) linearSpeedSet = linearSpeedSet - decStep; // noch pos
+            else if (linearSpeedSet < linear) linearSpeedSet = linearSpeedSet + decStep; 
+            else linearSpeedSet = linearSpeedSet - accStep;
+        } else { // linear = 0
+          if (linearSpeedSet > 0) linearSpeedSet = linearSpeedSet - decStep;
+          else linearSpeedSet = linearSpeedSet + decStep;
+        }
+        if ((linear == 0) && (linearSpeedSet != 0) && (fabs(linearSpeedSet) < decStep)) linearSpeedSet = 0;
+        
+        lastLinearSetTime = lastLinearSetTime + 20; // Rampe alle 20ms anpassen
+
+      }
    } else {
      linearSpeedSet = linear;
    }
@@ -313,6 +363,7 @@ void Motor::sense(){
   motorsSenseLP = motorRightSenseLP + motorLeftSenseLP + motorMowSenseLP;
   motorRightPWMCurrLP = lp * motorRightPWMCurrLP + (1.0-lp) * ((float)motorRightPWMCurr);
   motorLeftPWMCurrLP = lp * motorLeftPWMCurrLP + (1.0-lp) * ((float)motorLeftPWMCurr);
+  lp = 0.99;
   motorMowPWMCurrLP = lp * motorMowPWMCurrLP + (1.0-lp) * ((float)motorMowPWMCurr); 
  
   // compute normalized current (normalized to 1g gravity)
@@ -512,5 +563,3 @@ void Motor::plot(){
   speedPWM(0, 0, 0);
   CONSOLE.println("motor plot done - please ignore any IMU/GPS errors");
 }
-
-
