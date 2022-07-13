@@ -867,6 +867,10 @@ bool Map::isUndocking(){
   return ((maps.wayMode == WAY_DOCK) && (maps.shouldMow));
 }
 
+bool Map::isDocking(){
+  return ((maps.wayMode == WAY_DOCK) && (maps.shouldDock));
+}
+
 bool Map::startDocking(float stateX, float stateY){
   CONSOLE.println("Map::startDocking");
   if ((memoryCorruptions != 0) || (memoryAllocErrors != 0)){
