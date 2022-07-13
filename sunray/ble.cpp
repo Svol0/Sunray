@@ -49,8 +49,6 @@ String BLEConfig::exec(String cmd, bool doRetry){
 }
 
 void BLEConfig::run(){  
-#ifndef __linux__   
-  CONSOLE.println("probing for HM-10 module (NOTE: will fail for ESP32)...");  
   int baud;
   bool found = false;
   //while (true){    
@@ -70,14 +68,14 @@ void BLEConfig::run(){
         case 11: baud=1382400; break;  */
         default: continue;
       }
-      CONSOLE.print("trying to detect Bluetooth 4.0/BLE (HM-10 module) (make sure your phone is NOT connected)");
+      CONSOLE.print("trying to detect Bluetooth 4.0/BLE module (make sure your phone is NOT connected)");
       CONSOLE.print(baud);
       CONSOLE.println("...");
       BLE.begin(baud);    
       //BLE.flush();
       String res = exec("AT\r\n", false);
       if (res.indexOf("OK") != -1){
-        CONSOLE.println("Bluetooth 4.0/BLE (HM-10) module found!");
+        CONSOLE.println("Bluetooth 4.0/BLE module found!");
         if (baud == BLE_BAUDRATE) {
           found = true;
           break;
@@ -108,5 +106,4 @@ void BLEConfig::run(){
     }
     //delay(1000);
   //}
-#endif
 }

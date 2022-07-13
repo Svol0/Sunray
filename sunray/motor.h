@@ -29,19 +29,13 @@ class Motor {
     bool motorLeftOverload; 
     bool motorRightOverload; 
     bool motorMowOverload; 
-    bool tractionMotorsEnabled;       
     bool enableMowMotor;
     bool odometryError;    
     unsigned long motorOverloadDuration; // accumulated duration (ms)
     int  pwmMax;
-    int  pwmMaxMow;  
-    float  pwmSpeedOffset;
-    float mowMotorCurrentAverage;
-    float currentFactor;
-    bool pwmSpeedCurveDetection;
+    int  pwmMaxMow;    
     unsigned long motorLeftTicks;
     unsigned long motorRightTicks;
-    unsigned long motorMowTicks;    
     float linearSpeedSet; // m/s
     float angularSpeedSet; // rad/s
     float motorLeftSense; // left motor current (amps)
@@ -58,19 +52,14 @@ class Motor {
     void run();      
     void test();
     void plot();
-    void enableTractionMotors(bool enable);
     void setLinearAngularSpeed(float linear, float angular, bool useLinearRamp = true);
     void setMowState(bool switchOn);   
     void stopImmediately(bool includeMowerMotor);
   protected: 
     float motorLeftRpmSet; // set speed
-    float motorRightRpmSet;   
+    float motorRightRpmSet;    
     float motorLeftRpmCurr;
     float motorRightRpmCurr;
-    float motorMowRpmCurr;    
-    float motorLeftRpmCurrLP;
-    float motorRightRpmCurrLP;    
-    float motorMowRpmCurrLP;    
     float motorLeftRpmLast;
     float motorRightRpmLast;
     bool motorMowForwardSet; 
@@ -83,9 +72,9 @@ class Motor {
     float motorRightPWMCurrLP;    
     unsigned long lastControlTime;    
     unsigned long nextSenseTime;            
-    bool recoverMotorFault;
-    int recoverMotorFaultCounter;
-    unsigned long nextRecoverMotorFaultTime;
+    bool resetMotorFault;
+    int resetMotorFaultCounter;
+    unsigned long nextResetMotorFaultTime;
     int motorLeftTicksZero;    
     int motorRightTicksZero;    
     PID motorLeftPID;
@@ -95,13 +84,9 @@ class Motor {
     void speedPWM ( int pwmLeft, int pwmRight, int pwmMow );
     void control();    
     bool checkFault();
-    void checkOverload();
-    bool checkOdometryError();
-    bool checkMowRpmFault();
-    bool checkCurrentTooHighError();    
-    bool checkCurrentTooLowError();
     void sense();
-    void dumpOdoTicks(int seconds);    
+    void dumpOdoTicks(int seconds);
+    
 };
 
 

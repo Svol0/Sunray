@@ -15,7 +15,7 @@
 enum WayType {WAY_PERIMETER, WAY_EXCLUSION, WAY_DOCK, WAY_MOW, WAY_FREE};
 typedef enum WayType WayType;
 
-// a point on the map
+
 class Point
 {
   public:
@@ -33,7 +33,7 @@ class Point
     bool write(File &file);
 };
 
-// a closed loop of points
+
 class Polygon
 {
   public:
@@ -51,7 +51,6 @@ class Polygon
     bool write(File &file);
 };
 
-// a list of polygons
 class PolygonList // owns polygons!
 {
    public:
@@ -86,7 +85,7 @@ class Node   // nodes just hold references to points and other nodes
     void dealloc();
 };
 
-// a list of nodes
+
 class NodeList  // owns nodes!
 {
   public:
@@ -151,36 +150,19 @@ class Map
     int exclusionPointsCount;        
            
     bool shouldDock;  // start docking?
-    bool shouldRetryDock; // retry docking?
     bool shouldMow;  // start mowing?       
     
     long mapCRC;  // map data CRC
         
     void begin();    
     void run();    
-
-    // --------mapping ----------------------------------
     // set point coordinate
     bool setPoint(int idx, float x, float y);    
     // set number points for waytype
     bool setWayCount(WayType type, int count);
     // set number points for exclusion 
     bool setExclusionLength(int idx, int len);
-    void clearMap();
-    void dump();    
-    bool load();
-    bool save();
-    void stressTest();
-    long calcMapCRC();
-
-    // -------mowing operation--------------------------------------
-    // call to inform mapping to start mowing  
-    bool startMowing(float stateX, float stateY);    
-    // has mowing completed?
-    bool mowingCompleted();    
-    // given some point, check and modify it to get obstacle-safe mowing point
-    bool findObstacleSafeMowPoint(Point &findPathToPoint);    
-    // choose progress (0..100%) in mowing point list    
+    // choose progress (0..100%) in mowing point list
     void setMowingPointPercent(float perc);
     // skip next mowing point
     void skipNextMowingPoint();
@@ -195,25 +177,22 @@ class Map
     bool nextPoint(bool sim);
     // next point is straight and not a sharp curve?   
     bool nextPointIsStraight();
-    // get docking position and orientation
-    bool getDockingPos(float &x, float &y, float &delta);
-    
-    // ------docking------------------------------------------
-    // if docked manually, call this to inform mapping that robot has been docked
+    // set robot state position to docking position
+    void setRobotStatePosToDockingPos(float &x, float &y, float &delta);
     void setIsDocked(bool flag);
-    // is robot on docking points and undocking?
     bool isUndocking();
-    // is robot on docking points and docking?
-    bool isDocking();
-    // call this to inform mapping to start docking
     bool startDocking(float stateX, float stateY);
-    // retry docking (have robot drive back to first docking point)
-    bool retryDocking(float stateX, float stateY);
-    
-    // -----virtual obstacles----------------------------------
-    bool addObstacle(float stateX, float stateY);    
+    bool startMowing(float stateX, float stateY);
+    bool addObstacle(float stateX, float stateY);
+    bool mowingCompleted();
+    bool findObstacleSafeMowPoint(Point &findPathToPoint);
     void clearObstacles();
-    
+    void clearMap();
+    void dump();    
+    bool load();
+    bool save();
+    void stressTest();
+    long calcMapCRC();
   private:
     void finishedUploadingMap();
     void checkMemoryErrors();

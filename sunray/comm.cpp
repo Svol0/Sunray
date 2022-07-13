@@ -1,26 +1,16 @@
 #include "comm.h"
 #include "config.h"
 #include "robot.h"
-#include "StateEstimator.h"
-#include "LineTracker.h"
-#include "Stats.h"
-#include "src/op/op.h"
 #include "reset.h"
 #ifdef __linux__
   #include <BridgeClient.h>
-  #include <Process.h>
-  #include <WiFi.h>
 #else
   #include "src/esp/WiFiEsp.h"
 #endif
 #include "RingBuffer.h"
 
-//#define VERBOSE 1
-
 unsigned long nextInfoTime = 0;
 bool triggerWatchdog = false;
-bool bleConnected = false;
-unsigned long bleConnectedTimeout = 0;
 
 int encryptMode = 0; // 0=off, 1=encrypt
 int encryptPass = PASS; 
@@ -62,47 +52,6 @@ void cmdAnswer(String s){
   cmdResponse = s;
 }
 
-// request tune param
-void cmdTuneParam(){
-  if (cmd.length()<6) return;  
-  int counter = 0;
-  int paramIdx = -1;
-  int lastCommaIdx = 0;
-  for (int idx=0; idx < cmd.length(); idx++){
-    char ch = cmd[idx];
-    //Serial.print("ch=");
-    //Serial.println(ch);
-    if ((ch == ',') || (idx == cmd.length()-1)){
-      float floatValue = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toFloat();
-      if (counter == 1){                            
-          paramIdx = floatValue;
-      } else if (counter == 2){                                      
-          CONSOLE.print("tuneParam ");
-          CONSOLE.print(paramIdx);
-          CONSOLE.print("=");
-          CONSOLE.println(floatValue);    
-          switch (paramIdx){
-            case 0: 
-              stanleyTrackingNormalP = floatValue;
-              break;
-            case 1:
-              stanleyTrackingNormalK = floatValue;
-              break;
-            case 2:
-              stanleyTrackingSlowP = floatValue;
-              break;
-            case 3: 
-              stanleyTrackingSlowK = floatValue;
-              break;
-          } 
-      } 
-      counter++;
-      lastCommaIdx = idx;
-    }    
-  }      
-  String s = F("CT");
-  cmdAnswer(s);
-}
 
 // request operation
 void cmdControl(){
@@ -111,15 +60,14 @@ void cmdControl(){
   int lastCommaIdx = 0;
   int mow=-1;          
   int op = -1;
-  bool restartRobot = false;
   float wayPerc = -1;  
   for (int idx=0; idx < cmd.length(); idx++){
     char ch = cmd[idx];
     //Serial.print("ch=");
     //Serial.println(ch);
     if ((ch == ',') || (idx == cmd.length()-1)){
-      int intValue = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toInt();
-      float floatValue = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toFloat();
+      int intValue = cmd.substring(lastCommaIdx+1, idx+1).toInt();
+      float floatValue = cmd.substring(lastCommaIdx+1, idx+1).toFloat();
       if (counter == 1){                            
           if (intValue >= 0) {
             motor.enableMowMotor = (intValue == 1);
@@ -134,15 +82,9 @@ void cmdControl(){
       } else if (counter == 5){
           if (intValue >= 0) finishAndRestart = (intValue == 1);
       } else if (counter == 6){
-          if (floatValue >= 0) {
-            maps.setMowingPointPercent(floatValue);
-            restartRobot = true;
-          }
+          if (floatValue >= 0) maps.setMowingPointPercent(floatValue);
       } else if (counter == 7){
-          if (intValue > 0) {
-            maps.skipNextMowingPoint();
-            restartRobot = true;
-          }
+          if (intValue > 0) maps.skipNextMowingPoint();
       } else if (counter == 8){
           if (intValue >= 0) sonar.enabled = (intValue == 1);
       }
@@ -154,15 +96,7 @@ void cmdControl(){
   CONSOLE.print(linear);
   CONSOLE.print(" angular=");
   CONSOLE.println(angular);*/    
-  OperationType oldStateOp = stateOp;
-  if (restartRobot){
-    // certain operations may require a start from IDLE state (https://github.com/Ardumower/Sunray/issues/66)
-    setOperation(OP_IDLE);    
-  }
-  if (op >= 0) setOperation((OperationType)op, false, true); // new operation by operator
-    else if (restartRobot){     // no operation given by operator, continue current operation from IDLE state
-      setOperation(oldStateOp);    
-    }  
+  if (op >= 0) setOperation((OperationType)op, false, true);
   String s = F("C");
   cmdAnswer(s);
 }
@@ -179,7 +113,7 @@ void cmdMotor(){
     //Serial.print("ch=");
     //Serial.println(ch);
     if ((ch == ',') || (idx == cmd.length()-1)){
-      float value = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toFloat();
+      float value = cmd.substring(lastCommaIdx+1, idx+1).toFloat();
       if (counter == 1){                            
           linear = value;
       } else if (counter == 2){
@@ -217,8 +151,7 @@ void cmdSensorTest(){
 }
 
 
-// request waypoint (perim,excl,dock,mow,free)
-// W,startidx,x,y,x,y,x,y,x,y,...
+// request waypoint
 void cmdWaypoint(){
   if (cmd.length()<6) return;  
   int counter = 0;
@@ -232,8 +165,8 @@ void cmdWaypoint(){
     //Serial.print("ch=");
     //Serial.println(ch);
     if ((ch == ',') || (idx == cmd.length()-1)){            
-      float intValue = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toInt();
-      float floatValue = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toFloat();
+      float intValue = cmd.substring(lastCommaIdx+1, idx+1).toInt();
+      float floatValue = cmd.substring(lastCommaIdx+1, idx+1).toFloat();
       if (counter == 1){                            
           widx = intValue;
       } else if (counter == 2){
@@ -272,7 +205,6 @@ void cmdWaypoint(){
 
 
 // request waypoints count
-// N,#peri,#excl,#dock,#mow,#free
 void cmdWayCount(){
   if (cmd.length()<6) return;  
   int counter = 0;
@@ -282,8 +214,8 @@ void cmdWayCount(){
     //Serial.print("ch=");
     //Serial.println(ch);
     if ((ch == ',') || (idx == cmd.length()-1)){            
-      float intValue = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toInt();
-      float floatValue = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toFloat();      
+      float intValue = cmd.substring(lastCommaIdx+1, idx+1).toInt();
+      float floatValue = cmd.substring(lastCommaIdx+1, idx+1).toFloat();      
       if (counter == 1){                            
           if (!maps.setWayCount(WAY_PERIMETER, intValue)) return;                
       } else if (counter == 2){
@@ -306,7 +238,6 @@ void cmdWayCount(){
 
 
 // request exclusion count
-// X,startidx,cnt,cnt,cnt,cnt,...
 void cmdExclusionCount(){
   if (cmd.length()<6) return;  
   int counter = 0;
@@ -317,8 +248,8 @@ void cmdExclusionCount(){
     //Serial.print("ch=");
     //Serial.println(ch);
     if ((ch == ',') || (idx == cmd.length()-1)){            
-      float intValue = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toInt();
-      float floatValue = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toFloat();
+      float intValue = cmd.substring(lastCommaIdx+1, idx+1).toInt();
+      float floatValue = cmd.substring(lastCommaIdx+1, idx+1).toFloat();
       if (counter == 1){                            
           widx = intValue;
       } else if (counter == 2){
@@ -346,8 +277,8 @@ void cmdPosMode(){
     //Serial.print("ch=");
     //Serial.println(ch);
     if ((ch == ',') || (idx == cmd.length()-1)){
-      int intValue = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toInt();
-      double doubleValue = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1).toDouble();
+      int intValue = cmd.substring(lastCommaIdx+1, idx+1).toInt();
+      double doubleValue = cmd.substring(lastCommaIdx+1, idx+1).toDouble();
       if (counter == 1){                            
           absolutePosSource = bool(intValue);
       } else if (counter == 2){                                      
@@ -388,27 +319,6 @@ void cmdVersion(){
   s += encryptMode;
   s += F(",");
   s += encryptChallenge;
-  s += F(",");
-  s += BOARD;
-  s += F(",");
-  #ifdef DRV_SERIAL_ROBOT
-    s += "SR";
-  #elif DRV_ARDUMOWER
-    s += "AM";
-  #else 
-    s += "XX";
-  #endif
-  String id = "";
-  String mcuFwName = "";
-  String mcuFwVer = ""; 
-  robotDriver.getRobotID(id);
-  robotDriver.getMcuFirmwareVersion(mcuFwName, mcuFwVer);
-  s += F(",");  
-  s += mcuFwName;
-  s += F(",");
-  s += mcuFwVer;
-  s += F(",");  
-  s += id;
   CONSOLE.print("sending encryptMode=");
   CONSOLE.print(encryptMode);
   CONSOLE.print(" encryptChallenge=");  
@@ -430,17 +340,12 @@ void cmdStressTest(){
   maps.stressTest();  
 }
 
-// perform hang test (watchdog should trigger and restart robot)
+// perform hang test (watchdog should trigger)
 void cmdTriggerWatchdog(){
   String s = F("Y");
   cmdAnswer(s);  
   setOperation(OP_IDLE);
-  #ifdef __linux__
-    Process p;
-    p.runShellCommand("reboot");    
-  #else
-    triggerWatchdog = true;  
-  #endif
+  triggerWatchdog = true;
 }
 
 // perform hang test (watchdog should trigger)
@@ -536,8 +441,6 @@ void cmdSummary(){
   s += gps.numSVdgps;  
   s += ",";
   s += maps.mapCRC;
-  s += ",";
-  s += lateralError;
   cmdAnswer(s);  
 }
 
@@ -623,100 +526,6 @@ void cmdClearStats(){
   cmdAnswer(s);  
 }
 
-// scan WiFi networks
-void cmdWiFiScan(){
-  CONSOLE.println("cmdWiFiScan");
-  String s = F("B1,");  
-  #ifdef __linux__    
-  int numNetworks = WiFi.scanNetworks();
-  CONSOLE.print("numNetworks=");
-  CONSOLE.println(numNetworks);
-  for (int i=0; i < numNetworks; i++){
-      CONSOLE.println(WiFi.SSID(i));
-      s += WiFi.SSID(i);
-      if (i < numNetworks-1) s += ",";
-  }
-  #endif  
-  cmdAnswer(s);
-}
-
-// setup WiFi
-void cmdWiFiSetup(){
-  CONSOLE.println("cmdWiFiSetup");
-  #ifdef __linux__
-    if (cmd.length()<6) return;  
-    int counter = 0;
-    int lastCommaIdx = 0;    
-    String ssid = "";
-    String pass = "";
-    for (int idx=0; idx < cmd.length(); idx++){
-      char ch = cmd[idx];
-      //Serial.print("ch=");
-      //Serial.println(ch);
-      if ((ch == ',') || (idx == cmd.length()-1)){
-        String str = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1);
-        if (counter == 1){                            
-            ssid = str;
-        } else if (counter == 2){
-            pass = str;
-        } 
-        counter++;
-        lastCommaIdx = idx;
-      }    
-    }      
-    /*CONSOLE.print("ssid=");
-    CONSOLE.print(ssid);
-    CONSOLE.print(" pass=");
-    CONSOLE.println(pass);*/
-    WiFi.begin((char*)ssid.c_str(), (char*)pass.c_str());    
-  #endif
-  String s = F("B2");
-  cmdAnswer(s);
-}
-
-// request WiFi status
-void cmdWiFiStatus(){
-  String s = F("B3,");  
-  #ifdef __linux__
-  IPAddress addr = WiFi.localIP();
-	s += addr[0];
-	s += ".";
-	s += addr[1];
-	s += ".";
-	s += addr[2];
-	s += ".";
-	s += addr[3];		
-  #endif  
-  cmdAnswer(s);
-}
-
-
-// request firmware update
-void cmdFirmwareUpdate(){
-  String s = F("U1");  
-  #ifdef __linux__
-    if (cmd.length()<6) return;  
-    int counter = 0;
-    int lastCommaIdx = 0;    
-    String fileURL = "";
-    for (int idx=0; idx < cmd.length(); idx++){
-      char ch = cmd[idx];
-      if ((ch == ',') || (idx == cmd.length()-1)){
-        String str = cmd.substring(lastCommaIdx+1, ch==',' ? idx : idx+1);
-        if (counter == 1){                            
-            fileURL = str;
-        } 
-        counter++;
-        lastCommaIdx = idx;
-      }    
-    }          
-    CONSOLE.print("applying firmware update: ");
-    CONSOLE.println(fileURL);
-    Process p;
-    p.runShellCommand("/home/pi/sunray_install/update.sh --apply --url " + fileURL + " &");
-  #endif  
-  cmdAnswer(s);
-}
 
 // process request
 void processCmd(bool checkCrc, bool decrypt){
@@ -736,10 +545,8 @@ void processCmd(bool checkCrc, bool decrypt){
             cmd[i] = char(code);  
           }
         }
-        #ifdef VERBOSE
-          CONSOLE.print("decrypt:");
-          CONSOLE.println(cmd);
-        #endif
+        CONSOLE.print("decrypt:");
+        CONSOLE.println(cmd);
       }
     } 
   }
@@ -748,8 +555,7 @@ void processCmd(bool checkCrc, bool decrypt){
   int idx = cmd.lastIndexOf(',');
   if (idx < 1){
     if (checkCrc){
-      CONSOLE.print("COMM CRC ERROR: ");
-      CONSOLE.println(cmd);
+      CONSOLE.println("CRC ERROR");
       return;
     }
   } else {
@@ -778,10 +584,7 @@ void processCmd(bool checkCrc, bool decrypt){
   if (cmd[2] != '+') return;
   if (cmd[3] == 'S') cmdSummary();
   if (cmd[3] == 'M') cmdMotor();
-  if (cmd[3] == 'C'){ 
-    if ((cmd.length() > 4) && (cmd[4] == 'T')) cmdTuneParam();
-    else cmdControl();
-  }
+  if (cmd[3] == 'C') cmdControl();
   if (cmd[3] == 'W') cmdWaypoint();
   if (cmd[3] == 'N') cmdWayCount();
   if (cmd[3] == 'X') cmdExclusionCount();
@@ -793,14 +596,6 @@ void processCmd(bool checkCrc, bool decrypt){
   if (cmd[3] == 'Q') cmdMotorPlot();  
   if (cmd[3] == 'O') cmdObstacle();  
   if (cmd[3] == 'F') cmdSensorTest(); 
-  if (cmd[3] == 'B') {
-    if (cmd[4] == '1') cmdWiFiScan();
-    if (cmd[4] == '2') cmdWiFiSetup();   
-    if (cmd[4] == '3') cmdWiFiStatus();     
-  }
-  if (cmd[3] == 'U'){ 
-    if ((cmd.length() > 4) && (cmd[4] == '1')) cmdFirmwareUpdate();
-  }
   if (cmd[3] == 'G') cmdToggleGPSSolution();   // for developers
   if (cmd[3] == 'K') cmdKidnap();   // for developers
   if (cmd[3] == 'Z') cmdStressTest();   // for developers
@@ -839,15 +634,11 @@ void processBLE(){
   char ch;   
   if (BLE.available()){
     battery.resetIdle();  
-    bleConnected = true;
-    bleConnectedTimeout = millis() + 5000;
     while ( BLE.available() ){    
       ch = BLE.read();      
       if ((ch == '\r') || (ch == '\n')) {   
-        #ifdef VERBOSE
-          CONSOLE.print("BLE:");     
-          CONSOLE.println(cmd);        
-        #endif
+        CONSOLE.print("BLE:");     
+        CONSOLE.println(cmd);        
         processCmd(true, true);              
         BLE.print(cmdResponse);    
         cmd = "";
@@ -855,10 +646,6 @@ void processBLE(){
         cmd += ch;
       }
     }    
-  } else {
-    if (millis() > bleConnectedTimeout){
-      bleConnected = false;
-    }
   }  
 }  
 
@@ -941,9 +728,7 @@ void processWifiAppServer()
   if (client){
     if (stopClientTime != 0) {
       if (millis() > stopClientTime){
-        #ifdef VERBOSE 
-          CONSOLE.println("app stopping client");
-        #endif
+        CONSOLE.println("app stopping client");
         client.stop();
         stopClientTime = 0;                   
       }
@@ -955,9 +740,7 @@ void processWifiAppServer()
     client = server.available();      
   }
   if (client) {                               // if you get a client,
-    #ifdef VERBOSE
-      CONSOLE.println("New client");             // print a message out the serial port
-    #endif
+    CONSOLE.println("New client");             // print a message out the serial port
     battery.resetIdle();
     buf.init();                               // initialize the circular buffer
     unsigned long timeout = millis() + 50;
@@ -976,10 +759,8 @@ void processWifiAppServer()
             cmd = cmd + ch;
             gps.run();
           }
-          #ifdef VERBOSE
-            CONSOLE.print("WIF:");
-            CONSOLE.println(cmd);
-          #endif
+          CONSOLE.print("WIF:");
+          CONSOLE.println(cmd);
           if (client.connected()) {
             processCmd(true,true);
             client.print(
@@ -1076,11 +857,9 @@ void processWifiMqttClient()
 void processComm(){
   processConsole();     
   processBLE();     
-  if (!bleConnected){
-    processWifiAppServer();
-    processWifiRelayClient();
-    processWifiMqttClient();
-  }
+  processWifiAppServer();
+  processWifiRelayClient();
+  processWifiMqttClient();
   if (triggerWatchdog) {
     CONSOLE.println("hang test - watchdog should trigger and perform a reset");
     while (true){
@@ -1117,8 +896,7 @@ void outputConsole(){
     controlLoops=0;    
     CONSOLE.print (statControlCycleTime);        
     CONSOLE.print (" op=");    
-    CONSOLE.print (activeOp->getOpChain());    
-    //CONSOLE.print (stateOp);
+    CONSOLE.print (stateOp);
     CONSOLE.print (" freem=");
     CONSOLE.print (freeMemory ());
     #ifndef __linux__
@@ -1126,15 +904,11 @@ void outputConsole(){
       CONSOLE.print (" sp=");
       CONSOLE.print (*spReg, HEX);
     #endif
-    CONSOLE.print(" bat=");
+    CONSOLE.print(" volt=");
     CONSOLE.print(battery.batteryVoltage);
-    CONSOLE.print("(");    
-    CONSOLE.print(motor.motorsSenseLP);    
-    CONSOLE.print(") chg=");
-    CONSOLE.print(battery.chargingVoltage);    
-    CONSOLE.print("(");
+    CONSOLE.print(" chg=");
     CONSOLE.print(battery.chargingCurrent);    
-    CONSOLE.print(") tg=");
+    CONSOLE.print(" tg=");
     CONSOLE.print(maps.targetPoint.x());
     CONSOLE.print(",");
     CONSOLE.print(maps.targetPoint.y());

@@ -19,13 +19,9 @@
 // wenn man z.B. die spannung von 4.2V pro zelle auf 4.1V herab setzt (85–90% charged) kann man die lebensdauer 
 // verdoppeln - das gleiche gilt bei der endladung
 
-// lithium cells
-// ardumower:  Sony US18650 VTC5, 7 cells in series, nominal volage 3.6v
-// alfred:   Samsung INR18650-15M, 7 cells in series, nominal voltage 3.6v 
 
 void Battery::begin()
 {
-  startupPhase = 0;
   nextBatteryTime = 0;
   nextCheckTime = 0;
   nextEnableTime = 0;
@@ -75,12 +71,10 @@ bool Battery::chargingHasCompleted(){
  
 
 bool Battery::shouldGoHome(){
-  if (startupPhase < 2) return false;  
   return (batteryVoltage < batGoHomeIfBelow);
 }
 
 bool Battery::underVoltage(){
-  if (startupPhase < 2) return false;
   return (batteryVoltage < batSwitchOffIfBelow);
 }
 
@@ -94,16 +88,9 @@ void Battery::switchOff(){
 }
 
 void Battery::run(){  
-  if (startupPhase == 0) {
-    // give some time to establish communication to external hardware etc.
-    nextBatteryTime = millis() + 2000;
-    startupPhase++;
-    return;
-  }
-  if (millis() < nextBatteryTime) return;    
+  if (millis() < nextBatteryTime) return;
   nextBatteryTime = millis() + 50;
-  if (startupPhase == 1) startupPhase = 2;
-
+  
   float voltage = batteryDriver.getChargeVoltage();
   if (abs(chargingVoltage-voltage) > 10) chargingVoltage = voltage;  
   chargingVoltage = 0.9 * chargingVoltage + 0.1* voltage;  
@@ -117,7 +104,7 @@ void Battery::run(){
   chargingCurrent = 0.9 * chargingCurrent + 0.1 * batteryDriver.getChargeCurrent();    
 	
   if (!chargerConnectedState){
-	  if (chargingVoltage > 7){
+	  if (chargingVoltage > 5){
       chargerConnectedState = true;		    
 		  DEBUGLN(F("CHARGER CONNECTED"));      	              
       buzzer.sound(SND_OVERCURRENT, true);        

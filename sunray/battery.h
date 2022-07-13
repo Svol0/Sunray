@@ -35,7 +35,6 @@ class Battery {
     void resetIdle();
     void switchOff();
   protected:       
-    int startupPhase;    
     unsigned long nextBatteryTime ;
     bool switchOffByOperator;    
     unsigned long timeMinutes;

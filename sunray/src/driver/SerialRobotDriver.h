@@ -3,87 +3,51 @@
 // Licensed GPLv3 for open source use
 // or Grau GmbH Commercial License for commercial use (http://grauonline.de/cms2/?page_id=153)
 
-// Alfred mower: external robot (with motor drivers, battery, bumper etc.) connected and controlled via serial line
+// external robot (with motor drivers, battery, bumper etc.) connected and controlled via serial line
 
-#ifndef SERIAL_ROBOT_DRIVER_H
-#define SERIAL_ROBOT_DRIVER_H
+#ifndef AM_SERIAL_ROBOT_DRIVER_H
+#define AM_SERIAL_ROBOT_DRIVER_H
 
 #include <Arduino.h>
 #include "RobotDriver.h"
-#include <Process.h>
 
 
-class SerialRobotDriver: public RobotDriver {
+class SerialRobotDriver {
   public:
-    String robotID;
-    String mcuFirmwareName;
-    String mcuFirmwareVersion;
-    int requestLeftPwm;
-    int requestRightPwm;
-    int requestMowPwm;        
     unsigned long encoderTicksLeft;
     unsigned long encoderTicksRight;
     unsigned long encoderTicksMow;
-    bool mcuCommunicationLost;
+    bool receivedEncoders;
     bool motorFault;
     float batteryVoltage;
     float chargeVoltage;
     float chargeCurrent;
-    float mowCurr;
-    float motorLeftCurr;
-    float motorRightCurr;
-    bool resetMotorTicks;
-    float batteryTemp;
-    float cpuTemp;
     bool triggeredLeftBumper;
     bool triggeredRightBumper;
     bool triggeredLift;
     bool triggeredRain;
-    bool triggeredStopButton;
-    void begin() override;
-    void run() override;
-    bool getRobotID(String &id) override;
-    bool getMcuFirmwareVersion(String &name, String &ver) override;
-    float getCpuTemperature() override;
+    bool triggeredStopButton;           
+    void begin();
+    void run();
     void requestMotorPwm(int leftPwm, int rightPwm, int mowPwm);
     void requestSummary();
-    void requestVersion();
-    void updatePanelLEDs();
-    void updateCpuTemperature();
-    void updateWifiConnectionState();
-    bool setLedState(int ledNumber, bool greenState, bool redState);
-    bool setFanPowerState(bool state);
-    bool setImuPowerState(bool state);
-  protected:    
-    bool ledPanelInstalled;
-    Process cpuTempProcess;
-    Process wifiStatusProcess;    
+  protected:
     String cmd;
     String cmdResponse;
-    unsigned long nextMotorTime;    
     unsigned long nextSummaryTime;
-    unsigned long nextConsoleTime;
-    unsigned long nextTempTime;
-    unsigned long nextWifiTime;
-    unsigned long nextLedTime;
-    int cmdMotorCounter;
-    int cmdSummaryCounter;
-    int cmdMotorResponseCounter;
-    int cmdSummaryResponseCounter;
     void sendRequest(String s);
     void processComm();
     void processResponse(bool checkCrc);
     void motorResponse();
     void summaryResponse();
-    void versionResponse();
 };
 
 class SerialMotorDriver: public MotorDriver {
   public:        
     unsigned long lastEncoderTicksLeft;
     unsigned long lastEncoderTicksRight; 
-    unsigned long lastEncoderTicksMow;     
     SerialRobotDriver &serialRobot;
+    bool started;
     SerialMotorDriver(SerialRobotDriver &sr);
     void begin() override;
     void run() override;
@@ -95,14 +59,7 @@ class SerialMotorDriver: public MotorDriver {
 };
 
 class SerialBatteryDriver : public BatteryDriver {
-  public:   
-    float batteryTemp;
-    bool mcuBoardPoweredOn;
-    unsigned long nextTempTime;
-    unsigned long nextADCTime;
-    bool adcTriggered;
-    unsigned long linuxShutdownTime;
-    Process batteryTempProcess;
+  public:    
     SerialRobotDriver &serialRobot;
     SerialBatteryDriver(SerialRobotDriver &sr);
     void begin() override;
@@ -110,10 +67,8 @@ class SerialBatteryDriver : public BatteryDriver {
     float getBatteryVoltage() override;
     float getChargeVoltage() override;
     float getChargeCurrent() override;    
-    float getBatteryTemperature() override;    
     virtual void enableCharging(bool flag) override;
     virtual void keepPowerOn(bool flag) override;
-    void updateBatteryTemperature();
 };
 
 class SerialBumperDriver: public BumperDriver {
@@ -142,25 +97,6 @@ class SerialRainSensorDriver: public RainSensorDriver {
     void begin() override;
     void run() override;
     bool triggered() override;  
-};
-
-class SerialLiftSensorDriver: public LiftSensorDriver {
-  public:    
-    SerialRobotDriver &serialRobot;
-    SerialLiftSensorDriver(SerialRobotDriver &sr);    
-    void begin() override;
-    void run() override;
-    bool triggered() override;  
-};
-
-class SerialBuzzerDriver: public BuzzerDriver {
-  public:    
-    SerialRobotDriver &serialRobot;
-    SerialBuzzerDriver(SerialRobotDriver &sr);    
-    void begin() override;
-    void run() override;
-    void noTone() override;
-    void tone(int freq) override;  
 };
 
 

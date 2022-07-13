@@ -6,12 +6,10 @@
 */
 
 #include "pid.h"
-#include "config.h"
+
 
 PID::PID()
 {
-  consoleWarnTimeout = 0;
-  lastControlTime = 0;
 }
     
 PID::PID(float Kp, float Ki, float Kd){
@@ -24,7 +22,6 @@ PID::PID(float Kp, float Ki, float Kd){
 void PID::reset(void) {
   this->eold = 0;
   this->esum = 0;
-  lastControlTime = millis();
 }
 
 float PID::compute() {
@@ -32,16 +29,7 @@ float PID::compute() {
   Ta = ((float)(now - lastControlTime)) / 1000.0;
   //printf("%.3f\n", Ta);
   lastControlTime = now;
-  if (Ta > TaMax) {
-    if (millis() > consoleWarnTimeout){
-      consoleWarnTimeout = millis() + 1000;
-      CONSOLE.print("WARN: PID unmet cycle time Ta=");
-      CONSOLE.print(Ta);
-      CONSOLE.print(" TaMax=");
-      CONSOLE.println(TaMax);
-    }
-    Ta = TaMax;   // should only happen for the very first call
-  }
+  if (Ta > 1.0) Ta = 1.0;   // should only happen for the very first call
 
   // compute error
   float e = (w - x);

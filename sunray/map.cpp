@@ -109,7 +109,7 @@ Polygon::~Polygon(){
 
 bool Polygon::alloc(short aNumPoints){
   if (aNumPoints == numPoints) return true;
-  if ((aNumPoints < 0) || (aNumPoints > 10000)) {
+  if ((aNumPoints < 0) || (aNumPoints > 5000)) {
     CONSOLE.println("ERROR Polygon::alloc invalid number");    
     return false;
   }
@@ -468,9 +468,6 @@ void Map::begin(){
   mowPointsIdx = 0;
   freePointsIdx = 0;
   dockPointsIdx = 0;
-  shouldDock = false; 
-  shouldRetryDock = false; 
-  shouldMow = false;         
   mapCRC = 0;  
   CONSOLE.print("sizeof Point=");
   CONSOLE.println(sizeof(Point));  
@@ -827,9 +824,9 @@ bool Map::nextPointIsStraight(){
 }
 
 
-// get docking position and orientation (x,y,delta)
-bool Map::getDockingPos(float &x, float &y, float &delta){
-  if (dockPoints.numPoints < 2) return false;
+// set robot state (x,y,delta) to final docking state (x,y,delta)
+void Map::setRobotStatePosToDockingPos(float &x, float &y, float &delta){
+  if (dockPoints.numPoints < 2) return;
   Point dockFinalPt;
   Point dockPrevPt;
   dockFinalPt.assign(dockPoints.points[ dockPoints.numPoints-1]);  
@@ -837,15 +834,12 @@ bool Map::getDockingPos(float &x, float &y, float &delta){
   x = dockFinalPt.x();
   y = dockFinalPt.y();
   delta = pointsAngle(dockPrevPt.x(), dockPrevPt.y(), dockFinalPt.x(), dockFinalPt.y());  
-  return true;
 }             
 
 // mower has been docked
 void Map::setIsDocked(bool flag){
-  //CONSOLE.print("Map::setIsDocked ");
-  //CONSOLE.println(flag);
+  if (dockPoints.numPoints < 2) return;
   if (flag){
-    if (dockPoints.numPoints < 2) return; // keep current wayMode (not enough docking points for docking wayMode)  
     wayMode = WAY_DOCK;
     dockPointsIdx = dockPoints.numPoints-2;
     //targetPointIdx = dockStartIdx + dockPointsIdx;                     
@@ -873,42 +867,16 @@ bool Map::isUndocking(){
   return ((maps.wayMode == WAY_DOCK) && (maps.shouldMow));
 }
 
-bool Map::isDocking(){
-  return ((maps.wayMode == WAY_DOCK) && (maps.shouldDock));
-}
-
-bool Map::retryDocking(float stateX, float stateY){
-  CONSOLE.println("Map::retryDocking");    
-  if (!shouldDock) {
-    CONSOLE.println("ERROR retryDocking: not docking!");
-    return false;  
-  }  
-  if (shouldRetryDock) {
-    CONSOLE.println("ERROR retryDocking: already retrying!");   
-    return false;
-  } 
-  if (dockPointsIdx > 0) dockPointsIdx--;    
-  shouldRetryDock = true;
-  trackReverse = true;
-  return true;
-}
-
-
-bool Map::startDocking(float stateX, float stateY){  
+bool Map::startDocking(float stateX, float stateY){
   CONSOLE.println("Map::startDocking");
   if ((memoryCorruptions != 0) || (memoryAllocErrors != 0)){
     CONSOLE.println("ERROR startDocking: memory errors");
     return false; 
   }  
   shouldDock = true;
-  shouldRetryDock = false;
-  shouldMow = false;    
+  shouldMow = false;
   if (dockPoints.numPoints > 0){
-    if (wayMode == WAY_DOCK) {
-      CONSOLE.println("skipping path planning to first docking point: already docking");    
-      return true;
-    }
-    // find valid path from robot to first docking point      
+    // find valid path to docking point      
     //freePoints.alloc(0);
     Point src;
     Point dst;
@@ -939,10 +907,9 @@ bool Map::startMowing(float stateX, float stateY){
     return false; 
   }  
   shouldDock = false;
-  shouldRetryDock = false;
   shouldMow = true;    
   if (mowPoints.numPoints > 0){
-    // find valid path from robot (or first docking point) to mowing point    
+    // find valid path to mowing point    
     //freePoints.alloc(0);
     Point src;
     Point dst;
@@ -1111,10 +1078,10 @@ void Map::findPathFinderSafeStartPoint(Point &src, Point &dst){
 // go to next point
 // sim=true: only simulate (do not change data)
 bool Map::nextPoint(bool sim){
-  //CONSOLE.print("nextPoint sim=");
-  //CONSOLE.print(sim);
-  //CONSOLE.print(" wayMode=");
-  //CONSOLE.println(wayMode);
+  CONSOLE.print("nextPoint sim=");
+  CONSOLE.print(sim);
+  CONSOLE.print(" wayMode=");
+  CONSOLE.println(wayMode);
   if (wayMode == WAY_DOCK){
     return (nextDockPoint(sim));
   } 
@@ -1155,21 +1122,9 @@ bool Map::nextDockPoint(bool sim){
   if (shouldDock){
     // should dock  
     if (dockPointsIdx+1 < dockPoints.numPoints){
-      if (!sim) { 
-        lastTargetPoint.assign(targetPoint);
-        if (dockPointsIdx == 0) {
-          CONSOLE.println("nextDockPoint: shouldRetryDock=false");
-          shouldRetryDock=false;
-        }
-        if (shouldRetryDock) {
-          CONSOLE.println("nextDockPoint: shouldRetryDock=true");
-          dockPointsIdx--;
-          trackReverse = true;                    
-        } else {
-          dockPointsIdx++; 
-          trackReverse = false;                            
-        }
-      }              
+      if (!sim) lastTargetPoint.assign(targetPoint);
+      if (!sim) dockPointsIdx++;              
+      if (!sim) trackReverse = false;              
       if (!sim) trackSlow = true;
       if (!sim) useGPSfixForPosEstimation = true;
       if (!sim) useGPSfixForDeltaEstimation = true;      
@@ -1620,7 +1575,6 @@ bool Map::findPath(Point &src, Point &dst){
   }  
   
   unsigned long nextProgressTime = 0;
-  unsigned long startTime = millis();
   CONSOLE.print("findPath (");
   CONSOLE.print(src.x());
   CONSOLE.print(",");
@@ -1793,10 +1747,8 @@ bool Map::findPath(Point &src, Point &dst){
     } 
     
     CONSOLE.print("finish nodes=");
-    CONSOLE.print(pathFinderNodes.numNodes);
-    CONSOLE.print(" duration=");
-    CONSOLE.println(millis()-startTime);  
-
+    CONSOLE.println(pathFinderNodes.numNodes);
+      
     if ((currentNode != NULL) && (distance(*currentNode->point, *end->point) < 0.02)) {
       Node *curr = currentNode;
       int nodeCount = 0;

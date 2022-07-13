@@ -21,9 +21,8 @@
 
 #include "Arduino.h"				
 #include "../../gps.h"
-#include "../driver/RobotDriver.h"
 
-class UBLOX : public GpsDriver {
+class UBLOX{
   public:    
     typedef enum {
         GOT_NONE,
@@ -36,16 +35,35 @@ class UBLOX : public GpsDriver {
         GOT_PAYLOAD,
         GOT_CHKA 
 
-    } state_t;        
+    } state_t;    
+    
+    unsigned long iTOW;
+    int numSV;         // #signals tracked 
+    int numSVdgps;     // #signals tracked with DGPS signal
+    double lon;        // deg
+    double lat;        // deg
+    double height;     // m
+    float relPosN;     // m
+    float relPosE;     // m
+    float relPosD;     // m
+    float heading;     // rad
+    float groundSpeed; // m/s
+    float accuracy;    // m
+    float hAccuracy;   // m
+    float vAccuracy;   // m
+    SolType solution;    
+    bool solutionAvail;
+    unsigned long dgpsAge;
+    unsigned long chksumErrorCounter;
+    unsigned long dgpsChecksumErrorCounter;
+    unsigned long dgpsPacketCounter;    
+    
     UBLOX();
-    void begin(Client &client, char *host, uint16_t port) override;
-    void begin(HardwareSerial& bus,uint32_t baud) override;
-    void run() override;
-    bool configure() override;  
-    void reboot() override;
+    void begin(HardwareSerial& bus,uint32_t baud);
+    void run();
+    bool configure();  
+    void reboot();
   private:
-    bool useTCP;
-    Client* _client;    
     uint32_t _baud;  	
     HardwareSerial* _bus;
     state_t state;
@@ -58,9 +76,7 @@ class UBLOX : public GpsDriver {
     char payload[2000];                                          
     bool debug;
     bool verbose;
-    unsigned long solutionTimeout;    
-
-    void begin();
+    
     void addchk(int b);
     void dispatchMessage();
     long unpack_int32(int offset);

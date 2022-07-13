@@ -12,15 +12,10 @@
 
 #include <Arduino.h>
 
-
-#define PWM_FREQ_3900    0
-#define PWM_FREQ_29300   1
-
-
 class PinManager {
   public:  
     void begin();
-	  void analogWrite( uint32_t ulPin, uint32_t ulValue, byte pwmFreq ) ;  
+	  void analogWrite( uint32_t ulPin, uint32_t ulValue ) ;  
 		void setDebounce(int pin, int usecs);  // reject spikes shorter than usecs on pin
 };
 

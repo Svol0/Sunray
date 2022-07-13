@@ -8,7 +8,6 @@
 #include <Arduino.h>
 #include <base64.h>
 
-// TODO: should not extend WiFiClient to make it reusable
 class NTRIPClient : public WiFiClient{
   protected:
     unsigned long reconnectTimeout;

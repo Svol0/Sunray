@@ -49,7 +49,7 @@
 #define log_e     _MLPrintLog 
 static inline int reg_int_cb(struct int_param_s *int_param)
 {
-  return 0;
+	
 }
 
 #if !defined MPU6050 && !defined MPU9150 && !defined MPU6500 && !defined MPU9250
@@ -434,7 +434,7 @@ const struct gyro_reg_s reg = {
 #endif
 };
 const struct hw_s hw = {
-    .addr           = MPU_ADDR, // 0x69,   
+    .addr           = 0x69,   
     .max_fifo       = 1024,
     .num_reg        = 118,
     .temp_sens      = 340,
