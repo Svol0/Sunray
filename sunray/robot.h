@@ -114,6 +114,8 @@ extern unsigned long controlLoops;
 extern bool imuIsCalibrating;
 extern bool wifiFound;
 
+extern float stateTemp; // aktuelle Temperatur
+
 #ifdef DRV_SERIAL_ROBOT
   extern SerialRobotDriver robotDriver;
   extern SerialMotorDriver motorDriver;
