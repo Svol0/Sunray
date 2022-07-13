@@ -203,6 +203,15 @@ float diffIMUWheelYawSpeed = 0;
 float diffIMUWheelYawSpeedLP = 0;
 bool dockReasonRainTriggered = false;
 
+int dockGpsRebootState;                   // Svol0: status for gps-reboot at specified docking point by undocking action
+bool blockKidnapByUndocking;              // Svol0: kidnap detection is blocked by undocking without gps
+unsigned long dockGpsRebootTime;          // Svol0: retry timer for gps-fix after gps-reboot
+unsigned long dockGpsRebootFixCounter;    // Svol0: waitingtime for fix after gps-reboot
+unsigned long dockGpsRebootFeedbackTimer; // Svol0: timer to generate acustic feedback
+bool dockGpsRebootDistGpsTrg = false;     // Svol0: trigger to check solid gps-fix position (no jump)
+bool allowDockLastPointWithoutGPS = false;  // Svol0: allow go on docking by loosing gps fix
+bool warnDockWithoutGpsTrg = false;            // Svol0: Trigger for warnmessage
+
 unsigned long recoverGpsTime = 0;
 int recoverGpsCounter = 0;
 
@@ -895,6 +904,7 @@ void computeRobotState(){
     stateGroundSpeed = 0.9 * stateGroundSpeed + 0.1 * gps.groundSpeed;    
     //CONSOLE.println(stateGroundSpeed);
     float distGPS = sqrt( sq(posN-lastPosN)+sq(posE-lastPosE) );
+    if (distGPS > 0.05) dockGpsRebootDistGpsTrg = true;  // Svol0: reset timer for solid gps-fix check (please see "dockGpsRebootState")
     if ((distGPS > 0.3) || (resetLastPos)){
       if (distGPS > 0.3) {
         gpsJump = true;
@@ -1012,9 +1022,15 @@ bool robotShouldBeInMotion(){
 // drive reverse if robot cannot move forward
 void triggerObstacle(){
   CONSOLE.println("triggerObstacle");    
-  statMowObstacles++;    
+  statMowObstacles++;
+  if (maps.isDocking()) {    
+    if (maps.retryDocking(stateX, stateY)) {
+      driveReverseStopTime = millis() + 3000;           
+      return;
+    }
+  } 
   if ((OBSTACLE_AVOIDANCE) && (maps.wayMode != WAY_DOCK)){    
-    driveReverseStopTime = millis() + 3000;      
+    driveReverseStopTime = millis() + 3000;
   } else { 
     stateSensor = SENS_OBSTACLE;
     setOperation(OP_ERROR);
@@ -1259,6 +1275,13 @@ void trackLine(){
     // line control (stanley)    
     bool straight = maps.nextPointIsStraight();
 
+    #if USE_LINEAR_SPEED_RAMP
+      // linear speed ramp needs more distance to stop at high speeds
+      const float closeToTargetLimit = 1.0 * setSpeed;
+    #else
+      const float closeToTargetLimit = 0.25;
+    #endif
+    
     // linarSpeedSet needed as absolut value for mapping
     float CurrSpeed = motor.linearSpeedSet * 1000;                                                    
     CurrSpeed = abs(CurrSpeed);
@@ -1266,7 +1289,7 @@ void trackLine(){
     if (maps.trackSlow) {
       // planner forces slow tracking (e.g. docking etc)
       linear = TRACKSLOWSPEED;  // see config.h
-    } else if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.5) && (!straight))   // approaching
+    } else if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < closeToTargetLimit) && (!straight))   // approaching
           || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 1000))                      // leaving  
        ) 
     {
@@ -1335,15 +1358,28 @@ void trackLine(){
   } else {
     // no gps solution
     if (REQUIRE_VALID_GPS){
-      if (!maps.isUndocking()) { 
-        //CONSOLE.println("no gps solution!");
-        stateSensor = SENS_GPS_INVALID;
-        //setOperation(OP_ERROR);
-        //buzzer.sound(SND_STUCK, true);          
-        linear = 0;
-        angular = 0;      
-        mow = false;
-      } 
+      // Svol0: continue docking if gps solution gets lost by driving to the last point (normal if dockingstation is under a roof)
+      if (allowDockLastPointWithoutGPS == true){
+        if (!warnDockWithoutGpsTrg){
+          CONSOLE.println("LineTracker.cpp WARN: Continue docking with no gps solution!");
+          warnDockWithoutGpsTrg = true;
+        }
+      } else {
+        if (!warnDockWithoutGpsTrg){
+          CONSOLE.println("LineTracker.cpp WARN: no gps solution!");
+          warnDockWithoutGpsTrg = true;
+        }
+     
+        if (!maps.isUndocking()) { 
+          //CONSOLE.println("no gps solution!");
+          stateSensor = SENS_GPS_INVALID;
+          //setOperation(OP_ERROR);
+          //buzzer.sound(SND_STUCK, true);          
+          linear = 0;
+          angular = 0;      
+          mow = false;
+        }
+      }   
     }
   }
 
@@ -1351,7 +1387,9 @@ void trackLine(){
   if (KIDNAP_DETECT){
     float allowedPathTolerance = KIDNAP_DETECT_ALLOWED_PATH_TOLERANCE;     
     if ( maps.isUndocking() ) allowedPathTolerance = 0.2;
-    if (fabs(distToPath) > allowedPathTolerance){ // actually, this should not happen (except on false GPS fixes or robot being kidnapped...)
+    //    if (fabs(distToPath) > allowedPathTolerance){ // actually, this should not happen (except on false GPS fixes or robot being kidnapped...)
+    // Svol0: changed for GPS-Reboot at a
+    if ((fabs(distToPath) > allowedPathTolerance) && (!blockKidnapByUndocking)){ // actually, this should not happen (except on false GPS fixes or robot being kidnapped...)
       linear = 0;
       angular = 0;        
       mow = false;
@@ -1374,7 +1412,80 @@ void trackLine(){
       recoverGpsCounter = 0;
     }
   }
-   
+
+  // reboot gps by undocking at a specified docking point (please see "DOCK_POINT_GPS_REBOOT" in config.h) //SOew
+  if (dockGpsRebootState > 0){   // status dockGpsReboot: 0= off, 1= reset gps, 2= wait for gps-fix, 3= check for stable gps-fix
+    switch (dockGpsRebootState){
+      
+      case 1:
+        // reboot gps to get new GPS fix
+        gps.reboot();   // reboot gps to get new GPS fix
+        dockGpsRebootTime = millis() + 5000; // load check timer for gps-fix with 5sec
+        dockGpsRebootFixCounter = 0;
+        dockGpsRebootState = 2;
+        CONSOLE.println("robot.cpp  dockGpsRebootState - start gps-reboot");
+        break;
+
+      case 2:
+        // wait for gps-fix solution
+        if (dockGpsRebootTime <= millis()){
+          if (gps.solution == SOL_FIXED){
+            maps.setLastTargetPoint(stateX, stateY);  // Manipulate last target point to avoid "KIDNAP DETECT"
+            dockGpsRebootState = 3;
+            dockGpsRebootFeedbackTimer  = millis();
+            dockGpsRebootTime = millis(); // load check timer for stable gps-fix
+            dockGpsRebootDistGpsTrg = false; // reset trigger
+            CONSOLE.print("robot.cpp  dockGpsRebootState - got gps-fix after ");
+            CONSOLE.print(dockGpsRebootFixCounter);
+            CONSOLE.println(" sec");     
+          }
+          else {
+            dockGpsRebootTime += 5000; // load check timer for gps-fix with 5sec
+            dockGpsRebootFixCounter += 5;  // add 5 seconds
+            if (!buzzer.isPlaying()) buzzer.sound(SND_TILT, true);
+            CONSOLE.print("robot.cpp  dockGpsRebootState - still no gps-fix after ");
+            CONSOLE.print(dockGpsRebootFixCounter);
+            CONSOLE.println(" sec");     
+          }
+        }
+        break;
+
+      case 3:
+        // wait if gps-fix position stays stable for at least 20sec
+        if ((gps.solution == SOL_FIXED) && (millis() - dockGpsRebootTime > 20000)){
+          dockGpsRebootState      = 0; // finished
+          blockKidnapByUndocking  = false;  // enable Kidnap detection
+          CONSOLE.println("robot.cpp  dockGpsRebootState - gps-pos is stable; continue undocking;");
+        }
+        if (gps.solution != SOL_FIXED) dockGpsRebootState = 2; // wait for gps-fix again
+        if (dockGpsRebootDistGpsTrg == true){ // gps position is changing to much
+          dockGpsRebootDistGpsTrg = false; // reset trigger
+          dockGpsRebootTime = millis();
+          CONSOLE.print("robot.cpp  dockGpsRebootState - gps-pos is moving; timereset after");
+          CONSOLE.print((millis() - dockGpsRebootTime));
+          CONSOLE.println("msec");
+          if (!buzzer.isPlaying()) buzzer.sound(SND_ERROR, true);               
+        }
+        if (dockGpsRebootFeedbackTimer <= millis()){
+          dockGpsRebootFeedbackTimer = millis() + 5000;
+          if (!buzzer.isPlaying()) buzzer.sound(SND_READY, true);
+        }
+        break;
+        
+      case 10:
+        // Wenn ohne GPS fix oder float das undocking gestartet wird, muss bei erreichen von fix oder float die "linearMotionStartTime" resetet werden, um "gps no speed => obstacle!" zu vermeiden
+        resetLinearMotionMeasurement();
+        break;
+        
+    } // switch (dockGpsRebootState)
+    if (dockGpsRebootState < 10) {
+      // stop mower
+      linear = 0;
+      angular = 0;        
+      mow = false;
+    }
+  } //if (dockGpsRebootState > 0)
+
   if (mow)  {  // wait until mowing motor is running
     if (millis() < motor.motorMowSpinUpTime + MOW_SPINUPTIME){  // see config.h -> "MOW_SPINUPTIME"
       if (!buzzer.isPlaying()) buzzer.sound(SND_WARNING, true);

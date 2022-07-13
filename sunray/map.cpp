@@ -21,6 +21,7 @@ Point *CHECK_POINT = (Point*)0x12345678;  // just some arbitray address for corr
 
 unsigned long memoryCorruptions = 0;        
 unsigned long memoryAllocErrors = 0;
+bool reverseTillGpsRebootPoint  = false;
 
 
 Point::Point(){
@@ -468,6 +469,9 @@ void Map::begin(){
   mowPointsIdx = 0;
   freePointsIdx = 0;
   dockPointsIdx = 0;
+  shouldDock = false;
+  shouldRetryDock = false;
+  shouldMow = false;  
   mapCRC = 0;  
   CONSOLE.print("sizeof Point=");
   CONSOLE.println(sizeof(Point));  
@@ -779,14 +783,31 @@ void Map::run(){
     case WAY_DOCK:      
       if (dockPointsIdx < dockPoints.numPoints){
         targetPoint.assign( dockPoints.points[dockPointsIdx] );
+        // Svol0: if no gps fix possible at dockingstation, undock without gps support
+        if ((dockPointsIdx+1) == dockPoints.numPoints){
+          if (DOCK_IGNORE_GPS == true) allowDockLastPointWithoutGPS = true;
+          if ((gps.solution == !SOL_FIXED) && (useGPSfixForPosEstimation == DOCK_IGNORE_GPS)){
+              useGPSfixForPosEstimation = !DOCK_IGNORE_GPS;
+              useGPSfixForDeltaEstimation = !DOCK_IGNORE_GPS;
+              CONSOLE.print("Map::run - gps.solution = ");
+              CONSOLE.print(gps.solution);
+              CONSOLE.print(" useGPSfixForPosEstimation = ");
+              CONSOLE.println(useGPSfixForPosEstimation);
+          }
+        } else allowDockLastPointWithoutGPS = false;
       }
       break;
     case WAY_MOW:
+      allowDockLastPointWithoutGPS = false; // Svol0:
+      trackReverse = false;             
+      trackSlow = false;
+
       if (mowPointsIdx < mowPoints.numPoints){
         targetPoint.assign( mowPoints.points[mowPointsIdx] );
       }
       break;
     case WAY_FREE:      
+      allowDockLastPointWithoutGPS = false; // Svol0:      
       if (freePointsIdx < freePoints.numPoints){
         targetPoint.assign(freePoints.points[freePointsIdx]);
       }
@@ -871,6 +892,28 @@ bool Map::isDocking(){
   return ((maps.wayMode == WAY_DOCK) && (maps.shouldDock));
 }
 
+bool Map::retryDocking(float stateX, float stateY){
+  CONSOLE.println("Map::retryDocking");    
+  if (!shouldDock) {
+    CONSOLE.println("ERROR retryDocking: not docking!");
+    return false;  
+  }
+  if (shouldRetryDock) {
+    CONSOLE.println("ERROR retryDocking: already retrying!");   
+    return false;
+  }
+  // Svol0: if a specific docking point for gps-reboot is configured, mower will return to this point, if retryDocking is triggered
+  if (((dockPointsIdx) >= (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){                                                                 
+      reverseTillGpsRebootPoint = true;
+      CONSOLE.print("Map::retryDocking: Go back to GPS-Reboot point: ");   
+      CONSOLE.println(dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT));
+  }
+  if (dockPointsIdx > 0) dockPointsIdx--;    
+  shouldRetryDock = true;
+  trackReverse = true;
+  return true;
+}
+
 bool Map::startDocking(float stateX, float stateY){
   CONSOLE.println("Map::startDocking");
   if ((memoryCorruptions != 0) || (memoryAllocErrors != 0)){
@@ -878,6 +921,7 @@ bool Map::startDocking(float stateX, float stateY){
     return false; 
   }  
   shouldDock = true;
+  shouldRetryDock = false;
   shouldMow = false;
   if (dockPoints.numPoints > 0){
     // find valid path to docking point      
@@ -911,6 +955,7 @@ bool Map::startMowing(float stateX, float stateY){
     return false; 
   }  
   shouldDock = false;
+  shouldRetryDock = false;
   shouldMow = true;    
   if (mowPoints.numPoints > 0){
     // find valid path to mowing point    
@@ -1126,12 +1171,89 @@ bool Map::nextDockPoint(bool sim){
   if (shouldDock){
     // should dock  
     if (dockPointsIdx+1 < dockPoints.numPoints){
-      if (!sim) lastTargetPoint.assign(targetPoint);
-      if (!sim) dockPointsIdx++;              
-      if (!sim) trackReverse = false;              
-      if (!sim) trackSlow = true;
-      if (!sim) useGPSfixForPosEstimation = true;
-      if (!sim) useGPSfixForDeltaEstimation = true;      
+      if (!sim) { 
+        lastTargetPoint.assign(targetPoint);
+        trackSlow = true; // Svol0:
+        if (dockPointsIdx == 0) {
+          CONSOLE.println("Map::nextDockPoint: shouldRetryDock=false; dockPointsIdx = 0");
+          shouldRetryDock=false;
+          reverseTillGpsRebootPoint = false;
+        }
+        if (shouldRetryDock || reverseTillGpsRebootPoint) {
+          CONSOLE.println("Map::nextDockPoint: shouldRetryDock=true");
+          // Svol0:
+          if (reverseTillGpsRebootPoint) {
+            if (((dockPointsIdx+1) == (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){
+              dockGpsRebootState = 1;                    // activate gps-reboot in robot.cpp
+              CONSOLE.print("Map::nextDockPoint - gps-reboot by retry docking at dockingpoint: ");
+              CONSOLE.print(dockPointsIdx);
+              CONSOLE.print(" DOCK_POINT_GPS_REBOOT: ");
+              CONSOLE.println(dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT));
+              reverseTillGpsRebootPoint = false;
+              dockPointsIdx++;
+            }
+          }
+          // Svol0: if going reverse and mower is between docking station and "DOCK_POINT_GPS_REBOOT", this will be done without gps support
+          if (((dockPointsIdx+1) > (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){                                                                 
+            if (!sim) useGPSfixForPosEstimation = !DOCK_IGNORE_GPS;
+            if (!sim) useGPSfixForDeltaEstimation = !DOCK_IGNORE_GPS;
+            CONSOLE.print("Map::nextDockPoint - gps-fix needed for reverse? 1=no/0=yes :");
+            CONSOLE.print(DOCK_IGNORE_GPS);
+            CONSOLE.print(" | dockPointsIdx: ");
+            CONSOLE.print(dockPointsIdx);
+            CONSOLE.print(" / ");
+            CONSOLE.println(dockPoints.numPoints);
+
+
+          } else {
+            if (!sim) useGPSfixForPosEstimation = true;
+            if (!sim) useGPSfixForDeltaEstimation = true;
+            CONSOLE.print("Map::nextDockPoint - gps-fix needed for reverse!");
+            CONSOLE.print(DOCK_IGNORE_GPS);
+            CONSOLE.print(" | dockPointsIdx: ");
+            CONSOLE.print(dockPointsIdx);
+            CONSOLE.print(" / ");
+            CONSOLE.println(dockPoints.numPoints);
+
+          }
+          
+          dockPointsIdx--;
+          trackSlow = false;
+          trackReverse = true;          
+/*
+          if (((dockPointsIdx) > (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) && (DOCK_POINT_GPS_REBOOT != 0)){                                                                 
+            reverseTillGpsRebootPoint = true;
+          } else reverseTillGpsRebootPoint = false;        
+*/        
+
+        } else {
+          dockPointsIdx++; 
+          trackReverse = false;
+          
+          CONSOLE.print("Map::nextDockPoint: dockPointsIdx: ");
+          CONSOLE.print(dockPointsIdx);
+          CONSOLE.print(" dockPoints.numPoints: ");
+          CONSOLE.print(dockPoints.numPoints);
+          CONSOLE.print(" trackReverse: ");
+          CONSOLE.println(trackReverse);
+
+          // Svol0: only the last dockingpoints (value from "DOCK_SLOW_ONLY_LAST_POINTS") will be done with slow speed
+          if ((dockPoints.numPoints > abs(DOCK_SLOW_ONLY_LAST_POINTS)) && 
+          (dockPointsIdx < (dockPoints.numPoints - abs(DOCK_SLOW_ONLY_LAST_POINTS))) && (DOCK_SLOW_ONLY_LAST_POINTS != 0) ){
+            if (trackSlow == true){
+              CONSOLE.print("Map::nextDockPoint: switched to slow track speed at dockPointsIdx: ");
+              CONSOLE.print(dockPointsIdx);
+              CONSOLE.print(" dockPoints.numPoints: ");
+              CONSOLE.print(dockPoints.numPoints);
+              CONSOLE.print(" trackReverse: ");
+              CONSOLE.println(trackReverse);
+            }
+            if (!sim) trackSlow = false;
+          }
+          if (!sim) useGPSfixForPosEstimation = true;
+          if (!sim) useGPSfixForDeltaEstimation = true;
+        }
+      }
       if (!sim) useGPSfloatForPosEstimation = false;    
       if (!sim) useGPSfloatForDeltaEstimation = false;    
       if (!sim) useIMU = true;     // false      
@@ -1143,10 +1265,71 @@ bool Map::nextDockPoint(bool sim){
   } else if (shouldMow){
     // should undock
     if (dockPointsIdx > 0){
+      CONSOLE.print("Map::nextDockPoint: actual dockPointsIdx :");
+      CONSOLE.println(dockPointsIdx);
+
       if (!sim) lastTargetPoint.assign(targetPoint);
-      if (!sim) dockPointsIdx--;              
-      if (!sim) trackReverse = true;              
-      if (!sim) trackSlow = true;      
+      if (!sim) dockPointsIdx--;
+
+      // Svol0: the mower will undock with slow speed and reverse, till the mower reached the pointnumber 
+      // (value from "DOCK_POINT_GPS_REBOOT" counted from the last dockingpoint (Dockingstation)).
+      // From there the mower will go on with normal speed, forward and with GPS-Support
+      if (((dockPointsIdx + 2) > (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT))) || (DOCK_POINT_GPS_REBOOT == 0)){                                                                 
+        if (!sim) trackReverse = true;              
+        if (!sim) trackSlow = true;      
+        if (!sim) useGPSfixForPosEstimation = !DOCK_IGNORE_GPS;
+        if (!sim) useGPSfixForDeltaEstimation = !DOCK_IGNORE_GPS;
+        if (!sim) useGPSfloatForPosEstimation = false;  
+        if (!sim) useGPSfloatForDeltaEstimation = false;
+        CONSOLE.print("Map::nextDockPoint: dockPointsIdx: ");
+        CONSOLE.print(dockPointsIdx);
+        CONSOLE.print(" dockPoints.numPoints: ");
+        CONSOLE.print(dockPoints.numPoints);
+        CONSOLE.print(" trackSlow: ");
+        CONSOLE.print(trackSlow);
+        CONSOLE.print(" trackReverse: ");
+        CONSOLE.print(trackReverse);
+        CONSOLE.print(" DOCK_IGNORE_GPS: ");
+        CONSOLE.println(DOCK_IGNORE_GPS);
+
+
+        // to avoid "gps no speed => obstacle!" error
+        if ((dockGpsRebootState == 0) && (dockGpsRebootState != 10)){
+          dockGpsRebootState  = 10;
+          CONSOLE.println("Map::nextDockPoint: to avoid gps no speed => obstacle! error resetLinearMotionMeasurement");      
+        }
+        if ((DOCK_IGNORE_GPS) && (DOCK_POINT_GPS_REBOOT != 0)){
+          blockKidnapByUndocking = true; // block Kidnap detection
+          CONSOLE.print("Map::nextDockPoint: blockKidnapByUndocking: ");      
+          CONSOLE.println(blockKidnapByUndocking);      
+        }
+      }
+      else {
+        if (!sim) trackReverse = false;  
+        if (!sim) trackSlow = false;
+        if (!sim) useGPSfixForPosEstimation = true;
+        if (!sim) useGPSfixForDeltaEstimation = true;                  
+        if (!sim) useGPSfloatForPosEstimation = true;  
+        if (!sim) useGPSfloatForDeltaEstimation = true;
+      }
+      if (!sim) useIMU = true; // false
+            
+      // Svol0: activates gps-reboot by reaching specified dockingpoint (please see "DOCK_POINT_GPS_REBOOT" in config.h)
+      if (((dockPointsIdx + 2) == (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT)) && DOCK_POINT_GPS_REBOOT != 0)){
+        dockGpsRebootState = 1;                    // activate gps-reboot in robot.cpp
+        CONSOLE.print("Map::nextDockPoint: gps-reboot by undocking at dockingpoint :");
+        CONSOLE.println(dockPointsIdx);
+      }
+
+      // Svol0: activate kidnap detection again
+      if ((dockPointsIdx == 0) || ((dockPointsIdx + 3) == (dockPoints.numPoints - abs(DOCK_POINT_GPS_REBOOT)) && DOCK_POINT_GPS_REBOOT != 0)) {
+        blockKidnapByUndocking = false; // reset block Kidnap detection
+        CONSOLE.print("Map::nextDockPoint: enable kidnap detection at dockPointsIdx: ");
+        CONSOLE.print(dockPointsIdx);
+        CONSOLE.print(" blockKidnapByUndocking: ");      
+        CONSOLE.println(blockKidnapByUndocking);      
+      }
+            
       return true;
     } else {
       // finished undocking
@@ -1161,6 +1344,10 @@ bool Map::nextDockPoint(bool sim){
         if (!sim) useGPSfloatForPosEstimation = true;    
         if (!sim) useGPSfloatForDeltaEstimation = true;    
         if (!sim) useIMU = true;    
+        CONSOLE.print("Map::nextDockPoint: undocking finished! trackReverse:");
+        CONSOLE.print(trackReverse);
+        CONSOLE.print(" trackSlow: ");      
+        CONSOLE.println(trackSlow);      
         return true;
       } else return false;        
     }  
