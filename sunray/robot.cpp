@@ -1330,14 +1330,28 @@ void trackLine(){
     
     //Mapping of Stanley Control Parameters in relation to actual Setpoint value of speed
     //Values need to be multiplied, because map() function does not work well with small range decimals
-    float k = map(CurrSpeed, MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, stanleyTrackingSlowK*1000, stanleyTrackingNormalK*1000);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
-    float p = map(CurrSpeed, MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, stanleyTrackingSlowP*1000, stanleyTrackingNormalP*1000);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
-    k = k / 1000;
-    p = p / 1000;
-    k = max(stanleyTrackingSlowK, min(stanleyTrackingNormalK, k));  // limitation for value if out of range
-    p = max(stanleyTrackingSlowP, min(stanleyTrackingNormalP, p));  // limitation for value if out of range
-        
+    float k = 0;
+    float p = 0;
+    if (MAP_STANLEY_CONTROL == true){
+      //Mapping of Stanley Control Parameters in relation to actual Setpoint value of speed
+      //Values need to be multiplied, because map() function does not work well with small range decimals
+      k = map(CurrSpeed, MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, stanleyTrackingSlowK*1000, stanleyTrackingNormalK*1000);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
+      p = map(CurrSpeed, MOTOR_MIN_SPEED*1000, MOTOR_MAX_SPEED*1000, stanleyTrackingSlowP*1000, stanleyTrackingNormalP*1000);  //MOTOR_MIN_SPEED and MOTOR_MAX_SPEED from config.h
+      k = k / 1000;
+      p = p / 1000;
+      k = max(stanleyTrackingSlowK, min(stanleyTrackingNormalK, k));  // limitation for value if out of range
+      p = max(stanleyTrackingSlowP, min(stanleyTrackingNormalP, p));  // limitation for value if out of range
+    } else {
+      k = stanleyTrackingNormalK; // STANLEY_CONTROL_K_NORMAL;
+      p = stanleyTrackingNormalP; // STANLEY_CONTROL_P_NORMAL;    
+      if (maps.trackSlow) {
+        k = stanleyTrackingSlowK; //STANLEY_CONTROL_K_SLOW;   
+        p = stanleyTrackingSlowP; //STANLEY_CONTROL_P_SLOW;          
+      }    
+    }
+
     angular =  p * trackerDiffDelta + atan2(k * lateralError, (0.001 + fabs(motor.linearSpeedSet)));       // correct for path errors           
+
     /*pidLine.w = 0;              
     pidLine.x = lateralError;
     pidLine.max_output = PI;
@@ -1479,7 +1493,7 @@ void trackLine(){
         if ((gps.solution == SOL_FIXED) && (millis() - dockGpsRebootTime > 20000)){
           dockGpsRebootState      = 0; // finished
           // blockKidnapByUndocking  = false;  // enable Kidnap detection
-          CONSOLE.println("robot.cpp  dockGpsRebootState - gps-pos is stable; continue undocking;");
+          CONSOLE.println("robot.cpp  dockGpsRebootState - gps-pos is stable; continue undocking/docking;");
         }
         if (gps.solution != SOL_FIXED) dockGpsRebootState = 2; // wait for gps-fix again
         if (dockGpsRebootDistGpsTrg == true){ // gps position is changing to much
