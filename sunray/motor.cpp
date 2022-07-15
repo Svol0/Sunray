@@ -15,6 +15,9 @@ RunningMedian samples = RunningMedian(MowMotorCurrentMedLen);
 unsigned long adaptivSpeedTimer = 0;
 bool mowMsgTrg  = false;
 
+bool mowTestActiv = false;
+int pwmMowTest  = 0;
+
 void Motor::begin() {
 	pwmMax = 255;
  
@@ -42,6 +45,14 @@ void Motor::begin() {
 	wheelBaseCm = WHEEL_BASE_CM;    // wheel-to-wheel distance (cm) 36
   wheelDiameter = WHEEL_DIAMETER; // wheel diameter (mm)
   ticksPerCm         = ((float)ticksPerRevolution) / (((float)wheelDiameter)/10.0) / 3.1415;    // computes encoder ticks per cm (do not change)  
+
+  // check for MOW_TICKS_PER_REVOLUTION value
+  #ifdef MOW_TICKS_PER_REVOLUTION
+    ticksPerMowMotorRevolution = MOW_TICKS_PER_REVOLUTION;
+    if (ticksPerMowMotorRevolution == 0) ticksPerMowMotorRevolution = 1;
+  #else
+    ticksPerMowMotorRevolution = 1; // avoid div by zero
+  #endif
 
   motorLeftPID.Kp       = MOTOR_PID_KP;  // 2.0;  
   motorLeftPID.Ki       = MOTOR_PID_KI;  // 0.03; 
@@ -143,7 +154,13 @@ void Motor::speedPWM ( int pwmLeft, int pwmRight, int pwmMow )
         break;
     }
     SpeedOffset = min(SPEED_FACTOR_MAX, max(SPEED_FACTOR_MIN, SpeedOffset));
-  }
+  } else if ((pwmMow = 0) && (ADAPTIVE_SPEED)) SpeedOffset = SPEED_FACTOR_MAX;
+
+   
+   //########################  Check pwm higher than Max ############################
+
+  if (mowTestActiv == true) pwmMaxMow = 255;  // if mow motor test is runing the is no limitation command: AT+D
+  
   pwmLeft = min(pwmMax, max(-pwmMax, pwmLeft));
   pwmRight = min(pwmMax, max(-pwmMax, pwmRight));  
   pwmMow = min(pwmMaxMow, max(-pwmMaxMow, pwmMow));  
@@ -374,6 +391,7 @@ void Motor::run() {
   // 20 ticksPerRevolution: @ 30 rpm => 0.5 rps => 10 ticksPerSec
   motorLeftRpmCurr = 60.0 * ( ((float)ticksLeft) / ((float)ticksPerRevolution) ) / deltaControlTimeSec;
   motorRightRpmCurr = 60.0 * ( ((float)ticksRight) / ((float)ticksPerRevolution) ) / deltaControlTimeSec;
+  motorMowRpmCurr = 60.0 * ( ((float)ticksMow) / ((float)ticksPerMowMotorRevolution) ) / deltaControlTimeSec;
 
   if (ticksLeft == 0) {
     motorLeftTicksZero++;
@@ -423,6 +441,16 @@ void Motor::sense(){
   if (millis() < nextSenseTime) return;
   nextSenseTime = millis() + 20;
   motorDriver.getMotorCurrent(motorLeftSense, motorRightSense, motorMowSense);
+
+  // correct the 
+  motorLeftSense -= GEAR_DRIVER_IDLE_CURRENT; // correct value
+  if (motorLeftSense < 0) motorLeftSense = 0;
+  motorRightSense -= GEAR_DRIVER_IDLE_CURRENT; // correct value
+  if (motorRightSense < 0) motorRightSense = 0;
+
+  motorMowSense -= MOW_DRIVER_IDLE_CURRENT; // correct value
+  if (motorMowSense < 0) motorMowSense = 0;
+  
   float lp = 0.995; // 0.9
   motorRightSenseLP = lp * motorRightSenseLP + (1.0-lp) * motorRightSense;
   motorLeftSenseLP = lp * motorLeftSenseLP + (1.0-lp) * motorLeftSense;
@@ -541,6 +569,34 @@ void Motor::dumpOdoTicks(int seconds){
   CONSOLE.println();               
 }
 
+void Motor::dumpOdoMowTicks(){
+  int ticksLeft=0;
+  int ticksRight=0;
+  int ticksMow=0;
+  motorDriver.getMotorEncoderTicks(ticksLeft, ticksRight, ticksMow);  
+  motorMowTicks += ticksMow;
+
+  unsigned long currTime = millis();
+  float deltaControlTimeSec =  ((float)(currTime - lastControlTime)) / 1000.0;
+  lastControlTime = currTime;
+
+  motorMowRpmCurr = 60.0 * ( ((float)ticksMow) / ((float)ticksPerMowMotorRevolution) ) / deltaControlTimeSec;
+
+  float lp = 0.9; // 0.995
+  motorMowRpmCurrLP = lp * motorMowRpmCurrLP + (1.0-lp) * motorMowRpmCurr;
+
+  CONSOLE.print(" pwmMow: ");
+  CONSOLE.print(pwmMowTest);
+  CONSOLE.print(" | RpmCurr: ");
+  CONSOLE.print(motorMowRpmCurr);
+  CONSOLE.print("U/min | RpmCurrLP: ");
+  CONSOLE.print(motorMowRpmCurrLP);
+  CONSOLE.print("U/min | Sense: ");
+  CONSOLE.print(motorMowSense); // motorstrom
+  CONSOLE.print("A | SenseLP: ");        
+  CONSOLE.print(motorMowSenseLP); // motorstrom
+  CONSOLE.println("A");
+}
 
 void Motor::test(){
   CONSOLE.println("motor test - 10 revolutions");
@@ -552,35 +608,251 @@ void Motor::test(){
   int pwmRight = 200; 
   bool slowdown = true;
   unsigned long stopTicks = ticksPerRevolution * 10;
-  while (motorLeftTicks < stopTicks || motorRightTicks < stopTicks){
-    if ((slowdown) && ((motorLeftTicks + ticksPerRevolution  > stopTicks)||(motorRightTicks + ticksPerRevolution > stopTicks))){  //Letzte halbe drehung verlangsamen
-      pwmLeft = pwmRight = 20;
-      slowdown = false;
-    }    
-    if (millis() > nextInfoTime){      
-      nextInfoTime = millis() + 1000;            
-      dumpOdoTicks(seconds);
-      seconds++;      
-    }    
-    if(motorLeftTicks >= stopTicks)
-    {
-      pwmLeft = 0;
-    }  
-    if(motorRightTicks >= stopTicks)
-    {
-      pwmRight = 0;      
+  unsigned long nextControlTime = 0;
+//  while (motorLeftTicks < stopTicks || motorRightTicks < stopTicks){
+  while (motorLeftTicks < stopTicks || motorRightTicks < stopTicks || seconds < 45){  //abbort if test takes longer than 45 Seconds
+    if (millis() > nextControlTime){
+      nextControlTime = millis() + 20;
+      if ((slowdown) && ((motorLeftTicks + ticksPerRevolution  > stopTicks)||(motorRightTicks + ticksPerRevolution > stopTicks))){  //Letzte halbe drehung verlangsamen
+        pwmLeft = pwmRight = 20;
+        slowdown = false;
+      }    
+      if (slowdown) {
+        if (motorLeftTicks + ticksPerRevolution  > stopTicks){
+          pwmLeft = 20;   //Letzte halbe drehung verlangsamen
+        }
+        if (motorRightTicks + ticksPerRevolution > stopTicks){
+          pwmRight = 20;  //Letzte halbe drehung verlangsamen
+        }
+        if (pwmLeft == 20 && pwmRight == 20) slowdown = false;
+      }
+      if (millis() > nextInfoTime){      
+        nextInfoTime = millis() + 1000;            
+        dumpOdoTicks(seconds);
+        seconds++;      
+      }    
+      if(motorLeftTicks >= stopTicks)
+      {
+        pwmLeft = 0;
+      }  
+      if(motorRightTicks >= stopTicks)
+      {
+        pwmRight = 0;      
+      }
+      
+      speedPWM(pwmLeft, pwmRight, 0);
+      sense();
+      //delay(50);         
+      watchdogReset();     
+      robotDriver.run();
     }
-    speedPWM(pwmLeft, pwmRight, 0);
-    sense();
-    delay(50);
-    watchdogReset();     
-    robotDriver.run();   
-  }
-  dumpOdoTicks(seconds);
+  }  
   speedPWM(0, 0, 0);
   CONSOLE.println("motor test done - please ignore any IMU/GPS errors");
+  if (seconds >= 45){
+    CONSOLE.println("motor.cpp Motor::test - test aborted due to timeout (>45sec) - please ignore any IMU/GPS errors");
+  } else CONSOLE.println("motor.cpp Motor::test - test done - please ignore any IMU/GPS errors");
 }
 
+//Svol0 TestMowMotor
+void Motor::testMow(){
+  unsigned long nextMowSpeedChange = 0;
+  int MowTestStep = 0;
+  int RepeatCounter = 0;
+  motorMowTicks = 0;
+  pwmMowTest    = 0;
+  int pwmMowMem = 0;
+  unsigned long nextValueOut = 0; 
+  
+  mowTestActiv  = true; // to disable speedlimitation
+  // test, if 'start/stop button' is bridged
+  if (digitalRead(pinButton) == HIGH) {
+    while (mowTestActiv == true){  
+      // abbruch, wenn die Start-Taste während des Tests gedrückt wird
+      if (MowTestStep >= 4 && MowTestStep < 10){
+        if (digitalRead(pinButton) == LOW){
+          nextMowSpeedChange = millis();
+          MowTestStep = 10;
+        }
+      }
+      if (MowTestStep == 12 || MowTestStep == 13){
+        if (digitalRead(pinButton) == LOW){
+          nextMowSpeedChange = millis();
+          MowTestStep = 14;
+        }
+      }
+
+      sense();          
+      buzzer.run();
+      watchdogReset();
+
+      // Infos im Sekundentakt rausschreiben
+      if (MowTestStep >= 6 && MowTestStep < 10){
+        if (millis() > nextValueOut){
+          nextValueOut += 1000;
+          dumpOdoMowTicks();
+        }
+      } else nextValueOut = millis();
+      
+      switch (MowTestStep) {
+        case 0: // Infos out
+          CONSOLE.println("*****************************************************************************************************************************");
+          CONSOLE.println("motor.cpp Motor::testMow:");
+          CONSOLE.println( "TEST STARTS WITH pwmMow = 100; VALUE INCREASES EVERY 10 SECONDS BY 5 TILL 'pwmMow = 255':");
+          CONSOLE.println(" ATTENTION! TO START THE MOWMOTOR KEEP THE 'START/STOP BUTTON' PRESSED FOR AT LEAST 5 SECONDS!");
+          CONSOLE.println(" THE MOWMOTOR CAN BE STOPPED BY PRESSING AGAIN THE 'START/STOP BUTTON'");
+          MowTestStep++;
+          nextMowSpeedChange = millis();
+          break;
+
+        case 1: // Warten, dass die Starttaste für min. 5 Sek gedrückt wird.
+          if (digitalRead(pinButton) == HIGH) nextMowSpeedChange = millis();
+          RepeatCounter = 0;
+          delay(20);
+          if (millis() - nextMowSpeedChange > 5000) MowTestStep++;
+          break;
+
+        case 2: // Bestätigungston Abspielen
+          nextMowSpeedChange = millis() + 1000;
+          CONSOLE.println(" PLEASE RELEASE THE 'START/STOP' TO GO ON WITH THE TEST");
+          buzzer.sound(SND_READY, true);
+          MowTestStep++;
+          break;
+
+        case 3: // warten, dass die Taste wieder losgelassen wird
+          if (millis() - nextMowSpeedChange > 1000){
+            if (digitalRead(pinButton) == HIGH){
+              CONSOLE.println(" ATTENTION! MOWMOTOR WILL START SPINN UP IN LESS THAN 10 SECONDS!");
+              MowTestStep++;
+            }
+          }
+          break;
+          
+        case 4: // Warnton laden
+          if (RepeatCounter <= 3){
+            nextMowSpeedChange = millis() + 2000;
+            buzzer.sound(SND_ERROR, true);
+          } else {
+            nextMowSpeedChange = millis() + 250;
+            buzzer.sound(SND_READY, true);
+          }
+          RepeatCounter++;
+          MowTestStep++;
+          break;
+
+        case 5: // Warnton abspielen
+          if (millis() > nextMowSpeedChange){
+            if (RepeatCounter <= 12) MowTestStep--;
+            else {
+              CONSOLE.println(" ATTENTION! MOWMOTOR IS SPINNING UP!");
+              MowTestStep++;
+            }
+          }          
+          break;
+
+        case 6: // spin up mow motor
+          if (millis() > nextMowSpeedChange) MowTestStep++;
+          break;
+
+        case 7: // spin up mow motor
+          if (pwmMowTest < 100) {
+            nextMowSpeedChange = millis() + 50; // erhöhung alle 50ms
+            pwmMowTest += 1;
+            speedPWM(0, 0, pwmMowTest);
+            MowTestStep--;
+          } else {
+              CONSOLE.println(" MOWMOTOR SPINN UP COMPLETED. PWM-VALUE WILL INCREASE EVERY 10 SECOUNDS BY 5 TILL pwmMow = 255");    
+              nextMowSpeedChange = millis() + 10000;
+              MowTestStep++; // fertig hochgelaufen
+          }
+          break;
+
+        case 8: // Alle 10 Sekunden wird der Mähmotor pwm-Wert um 5 erhöht
+          buzzer.sound(SND_READY, true);
+          pwmMowTest = pwmMowTest + 5;
+          if (pwmMowTest > 255){
+            pwmMowTest = 255;
+            MowTestStep = 10;
+          } else {
+            speedPWM(0, 0, pwmMowTest);
+            MowTestStep++;
+          }
+          break;
+
+        case 9:
+          if (millis() > nextMowSpeedChange){
+            nextMowSpeedChange = millis() + 10000;
+            MowTestStep--;
+          }
+          break;
+
+        case 10:  // reduziere die Geschwindigkeit
+          pwmMowMem = pwmMowTest;  // store last pwm-value
+          CONSOLE.println(" MOWMOTOR IS SLOWING DOWN.");
+          MowTestStep++;
+          break;
+
+        case 11:
+          if (pwmMowTest > 0){
+            if (millis() > nextMowSpeedChange){
+              pwmMowTest = pwmMowTest - 1;
+              speedPWM(0, 0, pwmMowTest);
+              nextMowSpeedChange = millis() + 10;
+            }
+          } else {
+            nextMowSpeedChange = millis();
+            RepeatCounter = 0;
+            MowTestStep++;
+          }
+          break;
+
+        case 12: // Info wiederholt ausgeben
+          CONSOLE.println(" YOU CAN ABORT THE DELAY OF 120 SEC BY PRESSING THE START/STOP BUTTON");
+          nextMowSpeedChange = millis() + 5000;
+          buzzer.sound(SND_READY, true);
+          RepeatCounter++;
+          MowTestStep++;
+          break;
+
+        case 13: // Warten
+          if (millis() > nextMowSpeedChange){
+            if (RepeatCounter <= 24) MowTestStep--;
+            else {
+              MowTestStep++;
+            }
+          }          
+          break;
+
+        case 14:
+          CONSOLE.println(" MOWMOTOR-TEST DONE - please ignore any IMU/GPS errors.");
+          CONSOLE.print(" LAST PWM VALUE BEFORE STOP WAS: ");
+          CONSOLE.println(pwmMowMem);
+          CONSOLE.println("*****************************************************************************************************************************");
+          pwmMowTest = MIN_MOW_RPM;
+          MowTestStep++;
+          nextMowSpeedChange = millis() + 5000;
+          break;
+
+        case 15:
+          if (millis() > nextMowSpeedChange){
+            mowTestActiv  = false; // enable speedlimitation
+          }
+          break;
+  
+      }    
+    } // while (mowTestActiv == true)
+  }
+  else {
+    speedPWM(0, 0, 0);
+    mowTestActiv  = false; // enable speedlimitation
+    pwmMowTest = MIN_MOW_RPM;
+    CONSOLE.println("motor.cpp Motor::testMow: START/STOP BUTTON SEEMS TO BE BRIDGED. END OF TEST");
+    CONSOLE.println("motor.cpp Motor::testMow: please ignore any IMU/GPS errors");
+    CONSOLE.println("*****************************************************************************************************************************");
+    delay(4000);
+  }
+  
+} 
 
 void Motor::plot(){
   CONSOLE.println("motor plot - NOTE: Start Arduino IDE Tools->Serial Plotter (CTRL+SHIFT+L)");

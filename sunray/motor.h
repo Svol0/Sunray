@@ -20,6 +20,7 @@ class Motor {
     float wheelBaseCm;  // wheel-to-wheel diameter
     int wheelDiameter;   // wheel diameter (mm)
     int ticksPerRevolution; // ticks per revolution
+    int ticksPerMowMotorRevolution; // ticks per revolution of the Mowmotor
     float ticksPerCm;  // ticks per cm
     bool activateLinearSpeedRamp;  // activate ramp to accelerate/slow down linear speed?
     bool toggleMowDir; // toggle mowing motor direction each mow motor start?    
@@ -37,6 +38,7 @@ class Motor {
     float SpeedOffset;
     unsigned long motorLeftTicks;
     unsigned long motorRightTicks;
+    unsigned long motorMowTicks;
     float linearSpeedSet; // m/s
     float angularSpeedSet; // rad/s
     float motorLeftSense; // left motor current (amps)
@@ -52,22 +54,28 @@ class Motor {
     void begin();
     void run();      
     void test();
+    void testMow(); //Svol0 TestMowMotor
     void plot();
     void setLinearAngularSpeed(float linear, float angular, bool useLinearRamp = true);
     void setMowState(bool switchOn);   
     void stopImmediately(bool includeMowerMotor);
     float calcStopWay;  // calculated distance for stop from actual speed
+    float motorMowPWMSet;
     float motorMowSenseMed; //mower motor current (amps, Median) //X
+    float motorLeftRpmCurrLP;
+    float motorRightRpmCurrLP;
+    float motorMowRpmCurrLP;
+    float motorLeftRpmCurr;
+    float motorRightRpmCurr;
+
         
   protected: 
     float motorLeftRpmSet; // set speed
     float motorRightRpmSet;    
-    float motorLeftRpmCurr;
-    float motorRightRpmCurr;
     float motorLeftRpmLast;
     float motorRightRpmLast;
-    bool motorMowForwardSet; 
-    float motorMowPWMSet;  
+    float motorMowRpmCurr;
+    bool motorMowForwardSet;  
     float motorMowPWMCurr; 
     int motorLeftPWMCurr;
     int motorRightPWMCurr;    
@@ -91,6 +99,7 @@ class Motor {
     bool checkFault();
     void sense();
     void dumpOdoTicks(int seconds);
+    void dumpOdoMowTicks();           // Svol0: test
     unsigned long lastLinearSetTime;  // Svol0: test
 
     float accStep;

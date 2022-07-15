@@ -156,6 +156,15 @@ void cmdMotorTest(){
   motor.test();  
 }
 
+//Svol0 TestMowMotor
+// To find optimal value for pwmMaxMow
+void cmdMowMotorTest(){
+  String s = F("D");
+  cmdAnswer(s);
+  motor.testMow();  
+}
+
+//END Svol0 TestMowMotor
 void cmdMotorPlot(){
   String s = F("Q");
   cmdAnswer(s);
@@ -419,11 +428,11 @@ void cmdToggleGPSSolution(){
   }
 }
 
-
-// request summary
+ // request summary
 void cmdSummary(){
   String s = F("S,");
   s += battery.batteryVoltage;  
+  s += battery.batteryVoltage;                  // 01
   s += ",";
   s += stateX;
   s += ",";
@@ -442,8 +451,10 @@ void cmdSummary(){
   s += stateSensor;
   s += ",";
   s += maps.targetPoint.x();
+  s += maps.targetPoint.x();                  // 10
   s += ",";
   s += maps.targetPoint.y();  
+  s += maps.targetPoint.y();                  // 11
   s += ",";
   s += gps.accuracy;  
   s += ",";
@@ -454,11 +465,48 @@ void cmdSummary(){
     s += battery.chargingCurrent;
   } else {
     s += motor.motorsSenseLP;
+    s += (motor.motorsSenseLP + MOW_DRIVER_IDLE_CURRENT + GEAR_DRIVER_IDLE_CURRENT + GEAR_DRIVER_IDLE_CURRENT + BOARD_IDLE_CURRENT);
   }
   s += ",";
   s += gps.numSVdgps;  
+  s += gps.numSVdgps;                         // 15
   s += ",";
   s += maps.mapCRC;
+  s += ",";
+  s += lateralError;
+  s += ",";
+  s += stateTemp; // Aktuelle Temperatur
+  s += stateTemp;                   // 18 Aktuelle Temperatur
+  s += ",";
+  s += motor.motorRightSenseLP;     // 19 Motorstrom Antriebsmotor rechts gemittelt
+  s += ",";
+  s += motor.motorLeftSenseLP;      // 20 Motorstrom Antriebsmotor links gemittelt
+  s += ",";
+ // s += motor.motorMowSenseLP;     // 21 Aktueller Motorstrom Mähmotor
+  s += motor.motorMowSenseMed;      // 21 Motorstrom Mähmotor gemittelt
+  s += ",";
+  s += motor.motorRightRpmCurrLP;   // 22 Abtriebsdrehzahl Antriebsmotor rechts
+  s += ",";
+  s += motor.motorLeftRpmCurrLP;    // 23 Abtriebsdrehzahl Antriebsmotor links
+  s += ",";
+  s += motor.motorRightSenseLP; // Motorstrom Antriebsmotor rechts
+  s += motor.motorMowRpmCurrLP;     // 24 Abtriebsdrehzahl Mähmotor gemittelt
+//  s += motor.motorMowPWMCurr;     // 24 Aktueller PMW-Wert Mähmotor
+  s += ",";
+  s += motor.motorLeftSenseLP; // Motorstrom Antriebsmotor links
+  s += motor.motorLeftSense;        // 25 Aktueller Strom Antriebsmotor links
+  s += ",";
+  s += motor.motorMowSenseLP; // Motorstrom Mähmotor
+  s += motor.linearSpeedSet;        // 26 Fahrgeschwindigkeit
+  s += ",";
+  s += motor.motorRightRpmCurrLP; // Abtriebsdrehzahl Antriebsmotor rechts
+  s += motor.motorRightSense;       // 27 Aktueller Strom Antriebsmotor rechts
+  s += ",";
+  s += motor.motorLeftRpmCurrLP; // Abtriebsdrehzahl Antriebsmotor links
+  s += motor.angularSpeedSet;       // 28 Wert für Drehbewegung
+  s += ",";
+  s += motor.motorMowRpmCurrLP; // Abtriebsdrehzahl Mähmotor
+  s += motor.motorMowPWMSet;        // 29 PWM-Wert Mähmotor
   cmdAnswer(s);  
 }
 
@@ -611,6 +659,7 @@ void processCmd(bool checkCrc, bool decrypt){
   if (cmd[3] == 'T') cmdStats();
   if (cmd[3] == 'L') cmdClearStats();
   if (cmd[3] == 'E') cmdMotorTest();  
+  if (cmd[3] == 'D') cmdMowMotorTest(); //Svol0 TestMowMotor
   if (cmd[3] == 'Q') cmdMotorPlot();  
   if (cmd[3] == 'O') cmdObstacle();  
   if (cmd[3] == 'F') cmdSensorTest(); 

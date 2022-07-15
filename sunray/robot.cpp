@@ -182,6 +182,7 @@ unsigned long lastCallBumperObstacle = 0; // last call for bumper.obstacle
 
 bool imuFound = false;
 float lastIMUYaw = 0; 
+float lateralError = 0; // lateral error
 
 bool wifiFound = false;
 char ssid[] = WIFI_SSID;      // your network SSID (name)
@@ -1238,7 +1239,7 @@ void trackLine(){
   if (maps.trackReverse) targetDelta = scalePI(targetDelta + PI);
   targetDelta = scalePIangles(targetDelta, stateDelta);
   trackerDiffDelta = distancePI(stateDelta, targetDelta);                         
-  float lateralError = distanceLineInfinite(stateX, stateY, lastTarget.x(), lastTarget.y(), target.x(), target.y());        
+  lateralError = distanceLineInfinite(stateX, stateY, lastTarget.x(), lastTarget.y(), target.x(), target.y());        
   float distToPath = distanceLine(stateX, stateY, lastTarget.x(), lastTarget.y(), target.x(), target.y());        
   
   targetDist = maps.distanceToTargetPoint(stateX, stateY);
