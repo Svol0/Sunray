@@ -221,6 +221,10 @@ bool dockGpsRebootDistGpsTrg = false;     // Svol0: trigger to check solid gps-f
 bool allowDockLastPointWithoutGPS = false;  // Svol0: allow go on docking by loosing gps fix
 bool warnDockWithoutGpsTrg = false;            // Svol0: Trigger for warnmessage
 
+unsigned long waitRecoveryRebootFloatTime  = 0;
+bool RebootFloatTimeTrg = false;
+bool waitRecoveryRebootFloatTimeTrg = false;
+
 unsigned long recoverGpsTime = 0;
 int recoverGpsCounter = 0;
 
@@ -1599,10 +1603,31 @@ void trackLine(){
         mow = false; 
         stateSensor = SENS_GPS_FIX_TIMEOUT;
         //angular = 0.2;
+        
+        if (waitRecoveryRebootFloatTimeTrg == false) {
+            CONSOLE.println("robot.cpp - fixTimeout!");
+            waitRecoveryRebootFloatTime = millis(); // set time stamp
+            waitRecoveryRebootFloatTimeTrg  = true;
+        }
       } else {
         //if (stateSensor == SENS_GPS_FIX_TIMEOUT) stateSensor = SENS_NONE; // clear fix timeout
       }       
     }     
+  }
+
+  // try to reboot gps if mower stays to long in float without getting fix
+  if (GPS_REBOOT_RECOVERY == true && REQUIRE_VALID_GPS == true && GPS_REBOOT_RECOVERY_FLOAT_TIME > 0 && RebootFloatTimeTrg == false && waitRecoveryRebootFloatTimeTrg == true){
+    if (millis() > (waitRecoveryRebootFloatTime + (GPS_REBOOT_RECOVERY_FLOAT_TIME * 60000))){
+      RebootFloatTimeTrg  = true;
+      CONSOLE.println("GpsWaitFixOp: Waiting for GPS-fix exceeds GPS_REBOOT_RECOVERY_FLOAT_TIME. GPS-reboot is initiated!");
+      gps.reboot();  // try to recover from GPS float
+    } 
+  }      
+
+  // reset GPS_REBOOT_RECOVERY_FLOAT_TIME
+  if (gps.solution == SOL_FIXED){
+    waitRecoveryRebootFloatTimeTrg  = false;
+    RebootFloatTimeTrg  = false;
   }
 
   if ((gps.solution == SOL_FIXED) || (gps.solution == SOL_FLOAT)){        
@@ -1623,17 +1648,17 @@ void trackLine(){
       // Svol0: continue docking if gps solution gets lost by driving to the last point (normal if dockingstation is under a roof)
       if (allowDockLastPointWithoutGPS == true){
         if (!warnDockWithoutGpsTrg){
-          CONSOLE.println("LineTracker.cpp WARN: Continue docking with no gps solution!");
+          CONSOLE.println("robot.cpp WARN: Continue docking with no gps solution!");
           warnDockWithoutGpsTrg = true;
         }
       } else {
         if (!warnDockWithoutGpsTrg){
-          CONSOLE.println("LineTracker.cpp WARN: no gps solution!");
+          CONSOLE.println("robot.cpp WARN: no gps solution!");
           warnDockWithoutGpsTrg = true;
         }
      
         if (!maps.isUndocking()) { 
-          //CONSOLE.println("no gps solution!");
+          //CONSOLE.println("robot.cpp WARN: no gps solution!");
           stateSensor = SENS_GPS_INVALID;
           //setOperation(OP_ERROR);
           //buzzer.sound(SND_STUCK, true);          
@@ -1641,7 +1666,7 @@ void trackLine(){
           angular = 0;      
           mow = false;
         }
-      }   
+      }
     }
   }
 
