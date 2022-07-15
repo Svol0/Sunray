@@ -181,6 +181,7 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
       if (millis() >= lastLinearSetTime) {
         if ((millis()+40) >= lastLinearSetTime) lastLinearSetTime = millis();
         calcStopWay = (linearSpeedSet * DEC_RAMP) / 2000;
+        /*
         CONSOLE.print("setLinearAngularSpeed: last call: ");
         CONSOLE.print((millis() - lastLinearSetTime));
         CONSOLE.print(" calcStopWay: ");
@@ -195,7 +196,7 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
         CONSOLE.print(linearSpeedSet);
         CONSOLE.print(" linear: ");
         CONSOLE.println(linear);
-
+*/
         if (ADAPTIVE_SPEED) linear = linear * SpeedOffset; // add speedoffset by use of ADAPTIVE_SPEED
         if (linear > 0) { // pos value
           if (linearSpeedSet < 0) linearSpeedSet = linearSpeedSet + decStep; // noch pos
