@@ -59,7 +59,7 @@ MPU9250_DMP imu;
   AmRobotDriver robotDriver;
   AmMotorDriver motorDriver;
   AmBatteryDriver batteryDriver;
-  AmBumperDriver bumper;
+  AmBumperDriver bumper(BUMPER_TRIGGER_DELAY);
   AmStopButtonDriver stopButton;
   AmRainSensorDriver rainDriver;
 #endif
@@ -846,8 +846,6 @@ void outputConfig(){
   #ifdef MOTOR_RIGHT_SWAP_DIRECTION
     CONSOLE.println("MOTOR_RIGHT_SWAP_DIRECTION");
   #endif
-  CONSOLE.print("ENABLE_DYNAMIC_MOWER_SPEED: ");
-  CONSOLE.println(ENABLE_DYNAMIC_MOWER_SPEED);
   CONSOLE.print("MOW_TICKS_PER_REVOLUTION: ");
   CONSOLE.println(MOW_TICKS_PER_REVOLUTION);
   CONSOLE.print("MOW_FAULT_CURRENT: ");
@@ -862,8 +860,26 @@ void outputConfig(){
   CONSOLE.println(ENABLE_FAULT_OBSTACLE_AVOIDANCE);
   CONSOLE.print("ENABLE_RPM_FAULT_DETECTION: ");
   CONSOLE.println(ENABLE_RPM_FAULT_DETECTION);
-  CONSOLE.print("ENABLE_DYNAMIC_MOWMOTOR: ");
-  CONSOLE.println(ENABLE_DYNAMIC_MOWMOTOR);
+
+  CONSOLE.print("ADAPTIVE_SPEED: ");
+  CONSOLE.println(ADAPTIVE_SPEED);
+  CONSOLE.print("MOWMOTOR_CURRENT_MEDIAN_LEN: ");
+  CONSOLE.println(MOWMOTOR_CURRENT_MEDIAN_LEN);
+  CONSOLE.print("ADAPTIVE_SPEED_ALGORITHM: ");
+  CONSOLE.println(ADAPTIVE_SPEED_ALGORITHM);
+  CONSOLE.print("SPEEDDOWNCURRENT: ");
+  CONSOLE.println(SPEEDDOWNCURRENT);
+  CONSOLE.print("SPEEDUPCURRENT: ");
+  CONSOLE.println(SPEEDUPCURRENT);
+  CONSOLE.print("SPEED_FACTOR_MAX: ");
+  CONSOLE.println(SPEED_FACTOR_MAX);
+  CONSOLE.print("SPEED_FACTOR_MIN: ");
+  CONSOLE.println(SPEED_FACTOR_MIN);
+  CONSOLE.print("MIN_MOW_RPM: ");
+  CONSOLE.println(MIN_MOW_RPM);
+  CONSOLE.print("MAX_MOW_RPM: ");
+  CONSOLE.println(MAX_MOW_RPM);
+  
   #ifdef SONAR_INSTALLED
     CONSOLE.println("SONAR_INSTALLED");
     CONSOLE.print("SONAR_ENABLE: ");  

@@ -10,7 +10,7 @@
 #include "Arduino.h"
 #include <RunningMedian.h>
 
-RunningMedian samples = RunningMedian(MowMotorCurrentMedLen);
+RunningMedian samples = RunningMedian(MOWMOTOR_CURRENT_MEDIAN_LEN);
 
 unsigned long adaptivSpeedTimer = 0;
 bool mowMsgTrg  = false;
