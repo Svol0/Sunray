@@ -1240,7 +1240,8 @@ bool robotShouldBeInMotion(){
 // drive reverse if robot cannot move forward
 void triggerObstacle(){
   CONSOLE.println("triggerObstacle");
-  motor.setLinearAngularSpeed(0,0, false);  // stop without linear ramp
+  // motor.setLinearAngularSpeed(0,0, false);  // stop without linear ramp
+  motor.stopImmediately(true);
   statMowObstacles++;
   if (maps.isDocking()) {    
     if (maps.retryDocking(stateX, stateY)) {
@@ -1518,10 +1519,12 @@ void trackLine(){
           || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + closeToTargetTime))                      // leaving  
        ) 
     {
+      /*
       CONSOLE.print("distanceToTargetPoint: ");
       CONSOLE.print(maps.distanceToTargetPoint(stateX, stateY));
-      CONSOLE.print("calcStopWay: ");
+      CONSOLE.print(" calcStopWay: ");
       CONSOLE.println(motor.calcStopWay);
+      */
       linear = closeToTargetSpeed; // reduce speed when approaching/leaving waypoints
     } 
     else {
