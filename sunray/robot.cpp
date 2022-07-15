@@ -1383,8 +1383,8 @@ void trackLine(){
   }
 
   if ((gps.solution == SOL_FIXED) || (gps.solution == SOL_FLOAT)){        
-    if (linear > 0.06) {
-      if ((millis() > linearMotionStartTime + 5000) && (stateGroundSpeed < 0.03)){
+    if (abs(linear) > MOTOR_MIN_SPEED) {
+      if ((millis() > linearMotionStartTime + 5000) && (stateGroundSpeed < (MOTOR_MIN_SPEED / 2))){
         // if in linear motion and not enough ground speed => obstacle
         //if ( (GPS_SPEED_DETECTION) && (!maps.isUndocking()) ) { 
         if (GPS_SPEED_DETECTION) {         
