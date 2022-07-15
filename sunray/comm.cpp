@@ -431,7 +431,6 @@ void cmdToggleGPSSolution(){
  // request summary
 void cmdSummary(){
   String s = F("S,");
-  s += battery.batteryVoltage;  
   s += battery.batteryVoltage;                  // 01
   s += ",";
   s += stateX;
@@ -450,10 +449,8 @@ void cmdSummary(){
   s += ",";
   s += stateSensor;
   s += ",";
-  s += maps.targetPoint.x();
   s += maps.targetPoint.x();                  // 10
   s += ",";
-  s += maps.targetPoint.y();  
   s += maps.targetPoint.y();                  // 11
   s += ",";
   s += gps.accuracy;  
@@ -464,18 +461,15 @@ void cmdSummary(){
     s += "-";
     s += battery.chargingCurrent;
   } else {
-    s += motor.motorsSenseLP;
     s += (motor.motorsSenseLP + MOW_DRIVER_IDLE_CURRENT + GEAR_DRIVER_IDLE_CURRENT + GEAR_DRIVER_IDLE_CURRENT + BOARD_IDLE_CURRENT);
   }
   s += ",";
-  s += gps.numSVdgps;  
   s += gps.numSVdgps;                         // 15
   s += ",";
   s += maps.mapCRC;
   s += ",";
   s += lateralError;
   s += ",";
-  s += stateTemp; // Aktuelle Temperatur
   s += stateTemp;                   // 18 Aktuelle Temperatur
   s += ",";
   s += motor.motorRightSenseLP;     // 19 Motorstrom Antriebsmotor rechts gemittelt
@@ -489,23 +483,21 @@ void cmdSummary(){
   s += ",";
   s += motor.motorLeftRpmCurrLP;    // 23 Abtriebsdrehzahl Antriebsmotor links
   s += ",";
-  s += motor.motorRightSenseLP; // Motorstrom Antriebsmotor rechts
-  s += motor.motorMowRpmCurrLP;     // 24 Abtriebsdrehzahl Mähmotor gemittelt
+  s += motor.motorRightSense;     // 24 Aktueller Strom Antriebsmotor links
 //  s += motor.motorMowPWMCurr;     // 24 Aktueller PMW-Wert Mähmotor
   s += ",";
-  s += motor.motorLeftSenseLP; // Motorstrom Antriebsmotor links
   s += motor.motorLeftSense;        // 25 Aktueller Strom Antriebsmotor links
   s += ",";
-  s += motor.motorMowSenseLP; // Motorstrom Mähmotor
+//  s += motor.motorMowSenseLP; // 26 Motorstrom Mähmotor
   s += motor.linearSpeedSet;        // 26 Fahrgeschwindigkeit
   s += ",";
-  s += motor.motorRightRpmCurrLP; // Abtriebsdrehzahl Antriebsmotor rechts
+//  s += motor.motorRightRpmCurrLP; // 27 Abtriebsdrehzahl Antriebsmotor rechts
   s += motor.motorRightSense;       // 27 Aktueller Strom Antriebsmotor rechts
   s += ",";
-  s += motor.motorLeftRpmCurrLP; // Abtriebsdrehzahl Antriebsmotor links
+//  s += motor.motorLeftRpmCurrLP; // 28 Abtriebsdrehzahl Antriebsmotor links
   s += motor.angularSpeedSet;       // 28 Wert für Drehbewegung
   s += ",";
-  s += motor.motorMowRpmCurrLP; // Abtriebsdrehzahl Mähmotor
+//  s += motor.motorMowRpmCurrLP; // 29 Abtriebsdrehzahl Mähmotor
   s += motor.motorMowPWMSet;        // 29 PWM-Wert Mähmotor
   cmdAnswer(s);  
 }
