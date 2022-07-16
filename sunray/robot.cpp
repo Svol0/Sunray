@@ -36,7 +36,6 @@
 #include "cpu.h"
 #include "i2c.h"
 
-
 // #define I2C_SPEED  10000
 #define _BV(x) (1 << (x))
 
@@ -179,6 +178,7 @@ unsigned long nextSaveTime = 0;
 
 unsigned long bumperStayActivTime = 0;    // duration, the bumper stays triggered
 unsigned long lastCallBumperObstacle = 0; // last call for bumper.obstacle
+unsigned long maxWaitTimeForRecoverGPS = 0;  // value in ms
 
 bool imuFound = false;
 float lastIMUYaw = 0; 
@@ -1683,7 +1683,16 @@ void trackLine(){
       stateSensor = SENS_KIDNAPPED;
       if (millis() > recoverGpsTime){
         CONSOLE.println("KIDNAP_DETECT");
-        recoverGpsTime = millis() + 30000;
+        //recoverGpsTime = millis() + 30000;
+        if (GPS_COLD_REBOOT == true){
+          maxWaitTimeForRecoverGPS = (60000 * 5); // 5 minutes by cold reboot
+        } else {
+          maxWaitTimeForRecoverGPS = 60000; // value in ms (1 minute by warm reboot)
+        }
+        CONSOLE.print("KidnapWait.cpp: maxWaitTimeForRecoverGPS");
+        CONSOLE.print(maxWaitTimeForRecoverGPS);
+        CONSOLE.println(" ms"); 
+        recoverGpsTime = millis() + maxWaitTimeForRecoverGPS;        
         recoverGpsCounter++;
         if (recoverGpsCounter == 3){          
           setOperation(OP_ERROR);
