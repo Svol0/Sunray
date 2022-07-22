@@ -1,4 +1,4 @@
-## Diese Version entspricht der Sunray Release Version 1.0.276 mit zusätzlichen Funktionen:
+## Diese Version entspricht der Sunray master Version 1.0.282 mit zusätzlichen Funktionen:
 - Damit diese Version kompiliert werden kann, wird zusätzlich die Bibliothek „RunningMedian“ von Rob Tillaart benötigt. Diese kann in der Arduino IDE durch den Bibliotheksverwalter (Strg+Umschalt+I) installiert werden. Als Version habe ich die 0.3.6 genommen.
 - Die Parameter, die in dieser Auflistung erwähnt werden sind in der **config_example.h** enthalten. Eine kurze Beschreibung und die Einheit des Parameters ist meistens vorhanden.
 ---
@@ -140,17 +140,6 @@ Nachdem man anschließend das Projekt neu kompiliert und übertragen hat, sollte
 ---
 
 
-### This Version is a fork from the sunray release version 1.0.276 with the following added options:
-- **Set error if bumper stays permanently triggered:**
-set bumper error in case of continious triggering (time can be adjusted in config.h "BUMPER_MAX_TRIGGER_TIME".
-(time is in seconds; 0 = no error if bumper stays triggered continiously)
-- **map setSpeed as maximum speed for navigation by joystick from sunray-app**
-It is possible to navigate the mower by touch-joystick in sunray-app.
-In some cases it could be neccessary to navigate the mower very soften, especially when your connected by wifi to the mower.
-If parameter is set to true, the speed value from app will be used for maximum speed by joystick control. To navigate soften, change the speed slider for example to 0.10. If you need to let the mower drive long distance without accurate positioning change the speed slider to 0.30.
-- **Adjustable speed and time values in config.h from MrTreeBark**
-see "MOW_SPINUPTIME; OVERLOADSPEED; ROTATETOTARGETSPEED; TRACKSLOWSPEED; APPROACHWAYPOINTSPEED; FLOATSPEED; SONARSPEED; DOCKANGULARSPEED; OBSTACLEAVOIDANCESPEED; MOTOR_MAX_SPEED; MOTOR_MIN_SPEED;
-- **Map Stanley Control parameters to actual linearspeedset from motor.setlinearangularspeed from MrTreeBark**
 
 - **Reboot GPS at a specific docking point**
   - Bei Fahrt zur Docking-Station wird über den Parameter Wert von "DOCK_SLOW_ONLY_LAST_POINTS" die Position des Dockingpunktes angegeben (betrachtet aus Richtung Dockingstation), ab welchem mit langsamer Geschwindigkeit (linear = 0,1) weiter gefahren wird. Alle Dockingpunkte vorher werden mit der normalen (setspeed) Geschwindigkeit angefahren. Ein Wert von "Null" bewirkt, dass alle Punkte mit langsamer Geschwindigkeit angefahren werden.
