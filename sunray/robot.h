@@ -34,7 +34,9 @@
 #include "PubSubClient.h"
 
 
-#define VER "Sunray,1.0.282 SE"
+
+#define VER "Sunray,1.0.286 SE"
+
 
 // operation types
 enum OperationType {
@@ -65,6 +67,7 @@ enum Sensor {
       SENS_LIFT,              // lift triggered
       SENS_RAIN,              // rain sensor triggered
       SENS_STOP_BUTTON,       // emergency/stop button triggered
+      SENS_TEMP_OUT_OF_RANGE, // temperature out-of-range triggered
 };
 
 #ifndef __linux__

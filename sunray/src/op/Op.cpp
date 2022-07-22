@@ -61,25 +61,26 @@ void Op::changeOp(Op &anOp, bool returnBackOnExit, bool initiatedbyOperatorFlag)
 
 
 void Op::changeOperationType(OperationType op, bool initiatedbyOperatorFlag){
+  CONSOLE.println("changeOperationType");
   if (activeOp == NULL){
     CONSOLE.println("ERROR Op::changeOperationType - activeOp=NULL");
     return;
   }
   switch (op){
     case OP_IDLE:
-      activeOp->changeOp(idleOp);
+      activeOp->changeOp(idleOp, false, initiatedbyOperatorFlag);
       break;
     case OP_DOCK:
-      activeOp->changeOp(dockOp);
+      activeOp->changeOp(dockOp, false, initiatedbyOperatorFlag);
       break;
     case OP_MOW:      
-      activeOp->changeOp(mowOp);
+      activeOp->changeOp(mowOp, false, initiatedbyOperatorFlag);
       break;
     case OP_CHARGE:
-      activeOp->changeOp(chargeOp);
+      activeOp->changeOp(chargeOp, false, initiatedbyOperatorFlag);
       break;
     case OP_ERROR:            
-      activeOp->changeOp(errorOp);
+      activeOp->changeOp(errorOp, false, initiatedbyOperatorFlag);
       break;
   }
 }
@@ -170,6 +171,9 @@ void Op::onGpsFixTimeout(){
 }
 
 void Op::onRainTriggered(){
+}
+
+void Op::onTempOutOfRangeTriggered(){
 }
 
 void Op::onLiftTriggered(){
