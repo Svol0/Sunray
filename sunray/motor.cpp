@@ -11,7 +11,7 @@
 #include "LineTracker.h"
 #include <RunningMedian.h>
 
-RunningMedian samples = RunningMedian(MowMotorCurrentMedLen);
+RunningMedian samples = RunningMedian(MOWMOTOR_CURRENT_MEDIAN_LEN);
 
 unsigned long secTimer  = 0;
 int           countCallsPerSec  = 0;
@@ -24,7 +24,6 @@ int pwmMowTest  = 0;
 void Motor::begin() {
 	pwmMax = 255;
   SpeedOffset = 1.0; //X
-  pwmSpeedOffset = 1.0; //X 
   adaptivSpeedTimer = millis();
   #ifdef MAX_MOW_RPM
     if (MAX_MOW_RPM <= 255) {
@@ -34,9 +33,6 @@ void Motor::begin() {
   #else 
     pwmMaxMow = 255;
   #endif
-  pwmSpeedOffset = 1.0;
-  mowMotorCurrentAverage = MOWMOTOR_CURRENT_FACTOR * MOW_OVERLOAD_CURRENT;
-  currentFactor = MOWMOTOR_CURRENT_FACTOR;
 
   // calc ramp steps
   accStep = ((float)MOTOR_MAX_SPEED * 20) / (float)ACC_RAMP;
@@ -149,96 +145,13 @@ void Motor::speedPWM ( int pwmLeft, int pwmRight, int pwmMow )
 {
   //########################  Declaration ############################
 
-  int pwmVariableMow = 0;
-
-  //########################  Modify pwm depend to to actual Mower Current ############################
-
-  if ((pwmMow != 0) && (ENABLE_DYNAMIC_MOWMOTOR))
-  {
-    switch (DYNAMIC_MOWMOTOR_ALGORITHM){
-      case 1:
-        pwmVariableMow = (int)((MAX_MOW_RPM - MIN_MOW_RPM) * (motorMowSenseLP / MOW_OVERLOAD_CURRENT));
-        break;
-      case 2:
-        pwmVariableMow = (int)((MAX_MOW_RPM - MIN_MOW_RPM) * sqrt((motorMowSenseLP / MOW_OVERLOAD_CURRENT)));
-        break;
-      case 3:
-        pwmVariableMow = (int)((MAX_MOW_RPM - MIN_MOW_RPM) * sq((motorMowSenseLP / MOW_OVERLOAD_CURRENT)));
-        break;
-      default:
-        pwmVariableMow = (int)((MAX_MOW_RPM - MIN_MOW_RPM) * (motorMowSenseLP / MOW_OVERLOAD_CURRENT));
-        break;
-    }
-
-    if (motorMowSenseLP > MOW_OVERLOAD_CURRENT) pwmVariableMow = 0; // failure detection if mower is stuck.
-    if (pwmMow < 0) // check motor direction
-    {
-      pwmMow = (MIN_MOW_RPM + pwmVariableMow) * - 1;
-    }
-    else
-    {
-      pwmMow = MIN_MOW_RPM + pwmVariableMow;
-    }
-    
-//    CONSOLE.print("setpwmMow: ");
-//    CONSOLE.print(pwmMow);
-//    CONSOLE.print(" motorMowSenseLP: "); 
-//    CONSOLE.println(motorMowSenseLP);
-  }
 
   //########################  Correct Motor Direction ############################
   
   if (motorLeftSwapDir) pwmLeft *= -1;
   if (motorRightSwapDir) pwmRight *= -1;
-
-  //########################  Set Mower Speed depend to actual Mower Current ############################
-
-  if ((pwmMow != 0) && (ENABLE_DYNAMIC_MOWER_SPEED))
-  {    
-    if (USE_MOWMOTOR_CURRENT_AVERAGE)
-    {
-      float pwmAverageMow = (MAX_MOW_RPM - MIN_MOW_RPM) / 2 + MIN_MOW_RPM;
-
-      if ((pwmAverageMow - (MAX_MOW_RPM - MIN_MOW_RPM) / 10) < abs(pwmMow) || abs(pwmMow) > (pwmAverageMow + (pwmMaxMow - MIN_MOW_RPM) / 10))
-      {
-        mowMotorCurrentAverage = (( mowMotorCurrentAverage * 10000) + (motorMowSenseLP)) / (10000 + 1);
-        currentFactor = mowMotorCurrentAverage / MOW_OVERLOAD_CURRENT;
-//        CONSOLE.print("ADJUST CURRENT FACTOR ");
-      }
-    }
-
-//    CONSOLE.print("mowMotorCurrentAverage: ");
-//    CONSOLE.print(mowMotorCurrentAverage);
-//    CONSOLE.print(" currentFactor: ");
-//    CONSOLE.println(currentFactor);
-
-    if (motorMowSenseLP > currentFactor * MOW_OVERLOAD_CURRENT * 0.9) pwmSpeedOffset -= SPEED_ACCELERATION * 2;
-    if (motorMowSenseLP < currentFactor * MOW_OVERLOAD_CURRENT * 1.1) pwmSpeedOffset += SPEED_ACCELERATION;
     
-    pwmSpeedOffset  = min(SPEED_FACTOR_MAX, max(SPEED_FACTOR_MIN, pwmSpeedOffset));
-
-    //########################  Detect a curve ############################
-
-    pwmSpeedCurveDetection = false;
     
-    if (abs(pwmLeft - pwmRight) > (abs(pwmLeft + pwmRight) / 8))
-    { 
-      pwmSpeedCurveDetection = true;
-//      CONSOLE.println("at curves, speed will not be adjusted");
-    }
-    
-//    CONSOLE.print("pwmLeftMotor: ");
-//    CONSOLE.print(pwmLeft);
-//    CONSOLE.print(" pwmRightMotor: ");
-//    CONSOLE.print(pwmRight);
-//    CONSOLE.print(" setpwmSpeedOffset: ");
-//    CONSOLE.println(pwmSpeedOffset);
- 
-    //########################  set modified pwm value ############################
-    
-    //pwmLeft  = (int)(pwmLeft * pwmSpeedOffset);
-    //pwmRight = (int)(pwmRight * pwmSpeedOffset);
-  }
 
   if ((pwmMow != 0) && (ADAPTIVE_SPEED)) {
     switch (ADAPTIVE_SPEED_ALGORITHM) {
@@ -442,7 +355,6 @@ void Motor::setMowState(bool switchOn){
     }
   }
   SpeedOffset = 1.0; // reset Mow SpeedOffset
-  pwmSpeedOffset = 1.0; // reset Mow SpeedOffset
 }
 
 
@@ -770,28 +682,13 @@ void Motor::sense(){
 }
 
 
-void Motor::control(){  
-    
-  //########################  Set SpeedOffset if curve or manual driving is detected ############################
-  
-  float tempPwmSpeedOffset = pwmSpeedOffset;
-
-  float tempMotorLeftRpmSet;
-  float tempMotorRightRpmSet;
-
-  if (pwmSpeedCurveDetection)
-  {
-    tempPwmSpeedOffset = 1;
-  }
-
-  tempMotorLeftRpmSet = motorLeftRpmSet * tempPwmSpeedOffset; // set RPM speed with corrected dynamic speed
-  tempMotorRightRpmSet = motorRightRpmSet * tempPwmSpeedOffset; // set RPM speed with corrected dynamic speed
+void Motor::control(){      
 
   //########################  Calculate PWM for left driving motor ############################
 
   motorLeftPID.TaMax = 0.07;
   motorLeftPID.x = motorLeftRpmCurr;
-  motorLeftPID.w  = tempMotorLeftRpmSet;
+  motorLeftPID.w  = motorLeftRpmSet;
   motorLeftPID.y_min = -pwmMax;
   motorLeftPID.y_max = pwmMax;
   motorLeftPID.max_output = pwmMax;
@@ -804,7 +701,7 @@ void Motor::control(){
   
   motorRightPID.TaMax = 0.07;
   motorRightPID.x = motorRightRpmCurr;
-  motorRightPID.w = tempMotorRightRpmSet;
+  motorRightPID.w = motorRightRpmSet;
   motorRightPID.y_min = -pwmMax;
   motorRightPID.y_max = pwmMax;
   motorRightPID.max_output = pwmMax;

@@ -36,11 +36,7 @@ class Motor {
     unsigned long motorOverloadDuration; // accumulated duration (ms)
     int  pwmMax;
     int  pwmMaxMow;
-    float  pwmSpeedOffset;
     float SpeedOffset;
-    float mowMotorCurrentAverage;
-    float currentFactor;
-    bool pwmSpeedCurveDetection;
     unsigned long motorLeftTicks;
     unsigned long motorRightTicks;
     unsigned long motorMowTicks;    
