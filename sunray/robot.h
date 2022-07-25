@@ -35,7 +35,7 @@
 
 
 
-#define VER "Sunray,1.0.286 SE"
+#define VER "Sunray,1.0.287 SE"
 
 
 // operation types
