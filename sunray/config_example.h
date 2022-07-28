@@ -1,4 +1,4 @@
-// Ardumower Sunray V1.0.276  with added GPS-Reboot by undocking; map setSpeed to app joystickspeed; speed parameters; new linear ramp; reduced bumper sensitivity
+// Ardumower Sunray V1.0.287 SE - PLEASE HAVE A LOOK INTO "VERSIONINFO.MD" IN THE MAIN DIRECTORY FOR ADDED FEATURES AND DESCRIPTION
 // Copyright (c) 2013-2020 by Alexander Grau, Grau GmbH
 // Licensed GPLv3 for open source use
 // or Grau GmbH Commercial License for commercial use (http://grauonline.de/cms2/?page_id=153)
@@ -144,14 +144,14 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define MOW_SPINUPTIME          5000 //Adds time to rotate mowingblades before starting moving (ms)
 #define OVERLOADSPEED           0.15 //m/s
 #define ROTATETOTARGETSPEED     1.0 //0.5=29degree/sec
-#define TRACKSLOWSPEED          0.10 //m/s
+#define TRACKSLOWSPEED          0.15 //m/s
 #define APPROACHWAYPOINTSPEED   0.15 //m/s
 #define FLOATSPEED              0.15 //m/s
 #define SONARSPEED              0.10 //m/s
 #define DOCKANGULARSPEED        0.25 //rad/s
 #define OBSTACLEAVOIDANCESPEED  0.15 //m/s
 #define OBSTACLEAVOIDANCEWAY    0.50  // way in meters the mover will drive backwards in case of obstacle detection
-#define MOTOR_MAX_SPEED         0.50          // limitation for setSpeed value from Sunray-App (0,01 to 0,59m/sec are possible) to avoid to high speed setting by mistake   // SOEW_NEU
+#define MOTOR_MAX_SPEED         0.40          // limitation for setSpeed value from Sunray-App (0,01 to 0,59m/sec are possible) to avoid to high speed setting by mistake   // SOEW_NEU
 #define MOTOR_MIN_SPEED         0.05          // minimal driving speed
 
 //--- NEW LINEAR RAMP ---------------------------------------------------------------------------
@@ -194,28 +194,16 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 //#define MOTOR_LEFT_SWAP_DIRECTION 1  // uncomment to swap left motor direction
 //#define MOTOR_RIGHT_SWAP_DIRECTION 1  // uncomment to swap right motor direction
 
-// ------------ dynamic gear motors speed ----------------
-// speed will be adjusted by the mowing motor current. If USE_MOWMOTOR_CURRENT_AVERAGE is set to false, the Speed 
-// will be changed if the mow Current is lower or higher than MOWMOTOR_CURRENT_FACTOR * MOW_OVERLOAD_CURRENT.
-// If USE_MOWMOTOR_CURRENT_AVERAGE is set to true the algorithm will detect the current at the middle PWM of the mowMotor.
-// The mowing average will be calculate over 10000 loops and start at MOWMOTOR_CURRENT_FACTOR.
-#define ENABLE_DYNAMIC_MOWER_SPEED false
-#define SPEED_ACCELERATION 0.005 // Speed factor will be changed with every programm loop 
-
-#define SPEED_FACTOR_MAX 1.0
-#define SPEED_FACTOR_MIN 0.3
-#define USE_MOWMOTOR_CURRENT_AVERAGE true
-#define MOWMOTOR_CURRENT_FACTOR 0.25
-
 
 // ----- mowing motor -------------------------------------------------
 // NOTE: motor drivers will indicate 'fault' signal if motor current (e.g. due to a stall on a molehole) or temperature is too high for a 
 // certain time (normally a few seconds) and the mower will try again and set a virtual obstacle after too many tries
 // On the other hand, the overload detection will detect situations the fault signal cannot detect: slightly higher current for a longer time 
+#define MIN_MOW_RPM 170   //minimum value of mow RPM
+#define MAX_MOW_RPM 255   // maximum value is 255
 
 // choose ticks per cutting disc revolution :
 #define MOW_TICKS_PER_REVOLUTION  12 / 2   // odometry ticks per cutting disc revolution 
-
 
 #define MOW_FAULT_CURRENT 2.5       // mowing motor fault current (amps)
 #define MOW_OVERLOAD_CURRENT 2.0    // mowing motor overload current (amps)
@@ -238,14 +226,6 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 // should the robot trigger obstacle avoidance on motor errors if motor recovery failed?
 #define ENABLE_FAULT_OBSTACLE_AVOIDANCE true  
 
-// ----------- dynamic mowingm motor RPM --------------
-// RPM of the mow motor will be adjust over the actual current of the mow motor. If the motor needs more current the PWM will be higher.
-// it can be used 3 different functions for the calculation of the PWM depended´nt on the mowMotor current. The root-Function is recommended
-#define ENABLE_DYNAMIC_MOWMOTOR false // set true to activate, set false to deactivate
-#define DYNAMIC_MOWMOTOR_ALGORITHM 2 // 1 - linear; 2 - root-Function; 3 - square-Function
-#define MIN_MOW_RPM 170   //minimum value of mow RPM
-#define MAX_MOW_RPM 255   // maximum value is 255
-
 //Adaptive Speed on Mowmotorload
 //Do not use this function if ENABLE_DYNAMIC_MOWER_SPEED is true
 //Configuration tips: - The hysteresis is the "workwindow" where Speed is not changed, it is between SPEEDUPCURRENT and SPEEDDOWNCURRENT
@@ -265,13 +245,14 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 // - Controller not tested with: ENABLE_OVERLOAD_DETECTION true
 //Those settings work well with a 29cm 4Blade mowdeck and a Speedset of 0.39 in App. Check the Ardumower forum for further configuration hints.
 #define ADAPTIVE_SPEED true //Should Adaptive Speed on Mowmotorload be used? (Do not activate Dynamic gear motors speed if you enable this function)
-#define MowMotorCurrentMedLen 12 //Defines the medianlength of mowmotorcurrent measurement, smaller numbers: detect short load scenarios, higher numbers: short load scenarios won´t be "seen" and ignored. 12 is already quite low for reacting fast, tune for your needs.
+#define MOWMOTOR_CURRENT_MEDIAN_LEN 7      //Defines the medianlength of mowmotorcurrent measurement, smaller numbers: detect short load scenarios, higher numbers: short load scenarios won´t be "seen" and ignored. 12 is already quite low for reacting fast, tune for your needs.
 #define ADAPTIVE_SPEED_ALGORITHM 1 //Only option for now: (1) - 2Point Controller with hysteresis. The Hysteresis is the delta of SPEEDDOWNCURRENT and SPEEDUPCURRENT (e.g 0.2). In the hysteresis zone, speed is not changed
-#define SPEEDDOWNCURRENT 1.5 //The mower will slow down if mowmotorcurrent from median computation is greater than SPEEDDOWNCURRENT
+#define SPEEDDOWNCURRENT 1.3 //The mower will slow down if mowmotorcurrent from median computation is greater than SPEEDDOWNCURRENT
 #define SPEEDUPCURRENT 0.9 //The mower will speed up if mowmotorcurrent from median computation is less than SPEEDUPCURRENT
-#define SPEEDUPSTEP 0.015 //If the conditions for SPEEDUP are met, every iteration of function this SPEEDUPSTEP (m/s per step) will be applied to mowerspeed. The function iterates with 50Hz
-#define SPEEDDOWNSTEP 0.025 //If the conditions for SPEEDDOWN are met, every iteration of function this SPEEDDOWNSTEP (m/s per step) will be applied to mowerspeed. The function iterates with 50Hz
-
+#define CURRENT_FACTOR_HIGH_LOAD    1.9   // used only in ADAPTIVE_SPEED_ALGORITHM 2. the ratio is specified by how much the motor current must be increased in comparison to the base load in order to switch to a high power level
+#define CURRENT_FACTOR_MIDDLE_LOAD  1.5   // used only in ADAPTIVE_SPEED_ALGORITHM 2. the ratio is specified by how much the motor current must be increased in comparison to the base load in order to switch to a high power level
+#define SPEED_FACTOR_MAX 1.0
+#define SPEED_FACTOR_MIN 0.5
 
 // ------ WIFI module (ESP8266 ESP-01 with ESP firmware 2.2.1) --------------------------------
 // NOTE: all settings (maps, absolute position source etc.) are stored in your phone - when using another
@@ -458,8 +439,8 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 //#define DOCK_IGNORE_GPS true     // ignore GPS fix in docking station and use IMU-only (use this if robot gets false GPS fixes in your docking station)
 
 
-#define DOCK_SLOW_ONLY_LAST_POINTS  1 // Svol0: dockingpoint number (counted from last dockingpoint) where slow speed will be used to reach the dockingstation (0 = all points will be reached with slow speed)
-#define DOCK_POINT_GPS_REBOOT       1 // Svol0: dockingpoint number (counted from last dockingpoint) where the gps will be rebooted and waited for gps-fix by undocking. 0 = no gps reboot by undocking
+#define DOCK_SLOW_ONLY_LAST_POINTS  0 // Svol0: dockingpoint number (counted from last dockingpoint) where slow speed will be used to reach the dockingstation (0 = all points will be reached with slow speed)
+#define DOCK_POINT_GPS_REBOOT       0 // Svol0: dockingpoint number (counted from last dockingpoint) where the gps will be rebooted and waited for gps-fix by undocking. 0 = no gps reboot by undocking
 
 
 #define DOCK_AUTO_START true     // robot will automatically continue mowing after docked automatically

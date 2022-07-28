@@ -22,6 +22,7 @@ extern bool blockKidnapByUndocking;       // Svol0: kidnap detection is blocked 
 extern bool allowDockLastPointWithoutGPS; // Svol0: allow go on docking by loosing gps fix
 
 extern float targetDist;
+extern float lastTargetDist;
 
 void trackLine(bool runControl);  
 

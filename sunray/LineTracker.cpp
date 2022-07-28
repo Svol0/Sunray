@@ -21,6 +21,7 @@ float stanleyTrackingSlowK = STANLEY_CONTROL_K_SLOW;
 float stanleyTrackingSlowP = STANLEY_CONTROL_P_SLOW;    
 
 float targetDist = 0;
+float lastTargetDist = 0;
 
 float setSpeed = 0.1; // linear speed (m/s)
 
@@ -58,7 +59,7 @@ void trackLine(bool runControl){
   float distToPath = distanceLine(stateX, stateY, lastTarget.x(), lastTarget.y(), target.x(), target.y());        
   targetDist = maps.distanceToTargetPoint(stateX, stateY);
   
-  float lastTargetDist = maps.distanceToLastTargetPoint(stateX, stateY);  
+  lastTargetDist = maps.distanceToLastTargetPoint(stateX, stateY);  
 
   // limitation for setSpeed //SOew
   if (setSpeed > MOTOR_MAX_SPEED) setSpeed = MOTOR_MAX_SPEED;
@@ -250,7 +251,7 @@ void trackLine(bool runControl){
         // reboot gps to get new GPS fix
         CONSOLE.println("LineTracker.cpp  dockGpsRebootState - start gps-reboot");
         gps.reboot();   // reboot gps to get new GPS fix
-        dockGpsRebootTime = millis() + 5000; // load check timer for gps-fix with 5sec
+        dockGpsRebootTime = millis() + 10000; // load check timer for gps-fix with 10sec
         dockGpsRebootFixCounter = 0;
         dockGpsRebootState = 2;
         break;
@@ -269,8 +270,8 @@ void trackLine(bool runControl){
             CONSOLE.println(" sec");     
           }
           else {
-            dockGpsRebootTime += 5000; // load check timer for gps-fix with 5sec
-            dockGpsRebootFixCounter += 5;  // add 5 seconds
+            dockGpsRebootTime += 10000; // load check timer for gps-fix with 10sec
+            dockGpsRebootFixCounter += 10;  // add 10 seconds
             if (!buzzer.isPlaying()) buzzer.sound(SND_TILT, true);
             CONSOLE.print("LineTracker.cpp  dockGpsRebootState - still no gps-fix after ");
             CONSOLE.print(dockGpsRebootFixCounter);
@@ -331,7 +332,10 @@ void trackLine(bool runControl){
   }
 
   if (runControl){
-    motor.setLinearAngularSpeed(linear, angular);      
+    if (adaptivespeed.AS_mowDriveRevers == true){
+      motor.setLinearAngularSpeed(-OBSTACLEAVOIDANCESPEED,0,true);
+    } else  motor.setLinearAngularSpeed(linear, angular);    
+    
     if (detectLift()) mow = false; // in any case, turn off mower motor if lifted 
     motor.setMowState(mow);    
   } else{

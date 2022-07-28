@@ -32,7 +32,7 @@
   #include "src/esp/WiFiEsp.h"
 #endif
 #include "PubSubClient.h"
-
+#include "adspeed.h"
 
 
 #define VER "Sunray,1.0.287 SE"
@@ -147,6 +147,7 @@ extern Buzzer buzzer;
 extern Sonar sonar;
 extern VL53L0X tof;
 extern PinManager pinMan;
+extern AdaptiveSpeed adaptivespeed;
 extern Map maps;
 #ifdef DRV_SIM_ROBOT
   extern SimGpsDriver gps;

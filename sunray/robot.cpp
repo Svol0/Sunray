@@ -42,6 +42,7 @@
 #include "reset.h"
 #include "cpu.h"
 #include "i2c.h"
+#include "adspeed.h"
 #include "src/test/test.h"
 
 
@@ -105,6 +106,7 @@ Sonar sonar;
 VL53L0X tof(VL53L0X_ADDRESS_DEFAULT);
 Map maps;
 RCModel rcmodel;
+AdaptiveSpeed adaptivespeed;
 
 int stateButton = 0;  
 int stateButtonTemp = 0;
@@ -615,7 +617,8 @@ void start(){
   motor.begin();
   sonar.begin();
   bumper.begin();
-
+  adaptivespeed.begin();
+  
   outputConfig();
 
   if (TOF_ENABLE){
@@ -899,7 +902,8 @@ void run(){
   sonar.run();
   maps.run();  
   rcmodel.run();
-  
+  adaptivespeed.run();
+   
   // state saving
   if (millis() >= nextSaveTime){  
     nextSaveTime = millis() + 5000;

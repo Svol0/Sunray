@@ -9,14 +9,11 @@
 #include "robot.h"
 #include "Arduino.h"
 #include "LineTracker.h"
-#include <RunningMedian.h>
-
-RunningMedian samples = RunningMedian(MOWMOTOR_CURRENT_MEDIAN_LEN);
+#include "map.h"
 
 unsigned long secTimer  = 0;
 int           countCallsPerSec  = 0;
 int lastCounts  = 0;
-unsigned long adaptivSpeedTimer = 0;
 bool mowMsgTrg  = false;
 bool mowTestActiv = false;
 int pwmMowTest  = 0;
@@ -24,7 +21,6 @@ int pwmMowTest  = 0;
 void Motor::begin() {
 	pwmMax = 255;
   SpeedOffset = 1.0; //X
-  adaptivSpeedTimer = millis();
   #ifdef MAX_MOW_RPM
     if (MAX_MOW_RPM <= 255) {
       pwmMaxMow = MAX_MOW_RPM;
@@ -101,7 +97,6 @@ void Motor::begin() {
   motorLeftSenseLP = 0;
   motorRightSenseLP = 0;
   motorMowSenseLP = 0;
-  motorMowSenseMed = 0; //X  
   motorsSenseLP = 0;
 
   activateLinearSpeedRamp = USE_LINEAR_SPEED_RAMP;
@@ -151,55 +146,17 @@ void Motor::speedPWM ( int pwmLeft, int pwmRight, int pwmMow )
   if (motorLeftSwapDir) pwmLeft *= -1;
   if (motorRightSwapDir) pwmRight *= -1;
     
-    
-
-  if ((pwmMow != 0) && (ADAPTIVE_SPEED)) {
-    switch (ADAPTIVE_SPEED_ALGORITHM) {
-      //Simple 2 point controller that applies a linear ramp to mowerspeed through a offset.
-      //The delta of SPEEDDOWNCURRENT-SPEEDUPCURRENT is the hysteresis
-      case 1:
-        if (motorMowSenseMed > SPEEDDOWNCURRENT){
-          if (millis() > motor.motorMowSpinUpTime + MOW_SPINUPTIME){ //avoid trigger by speed up
-            adaptivSpeedTimer = millis();
-            SpeedOffset = SPEED_FACTOR_MIN;
-            //if (pwmMaxMow < MAX_MOW_RPM) 
-            pwmMaxMow = MAX_MOW_RPM;
-          }
-        }
-        if (motorMowSenseMed < SPEEDUPCURRENT){
-          if ((millis() - adaptivSpeedTimer) > 10000){
-          SpeedOffset = SPEED_FACTOR_MAX;        
-          // if (pwmMaxMow > MIN_MOW_RPM) 
-          pwmMaxMow = MIN_MOW_RPM;
-          }
-        }
-        break;
-      case 2:
-      //empty  
-        break;
-      case 3:
-      //empty  
-        break;
-      default:
-      //empty  
-        break;
-    }
-    SpeedOffset = min(SPEED_FACTOR_MAX, max(SPEED_FACTOR_MIN, SpeedOffset));
-  } else if ((pwmMow = 0) && (ADAPTIVE_SPEED)) SpeedOffset = SPEED_FACTOR_MAX;
-  
-
-  //RC PWM Option
-   //if (stateButton == 3)
-   //{    pwmMow = mowPWM_RC; }
-
   //########################  Check pwm higher than Max ############################
 
+  if (ADAPTIVE_SPEED) pwmMaxMow = adaptivespeed.setPwmMow();
+  
   if (mowTestActiv == true) pwmMaxMow = 255;  // if mow motor test is runing the is no limitation command: AT+D
   
   pwmLeft = min(pwmMax, max(-pwmMax, pwmLeft));
   pwmRight = min(pwmMax, max(-pwmMax, pwmRight));  
   pwmMow = min(pwmMaxMow, max(-pwmMaxMow, pwmMow)); 
   motorDriver.setMotorPwm(pwmLeft, pwmRight, pwmMow);
+  adaptivespeed.getActMowSpeedValue(pwmMow);
 
   /*
    CONSOLE.print("pwmMow: ");
@@ -248,7 +205,7 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
         CONSOLE.print(" linear: ");
         CONSOLE.println(linear);
 */
-        if (ADAPTIVE_SPEED) linear = linear * SpeedOffset; // X
+        if (ADAPTIVE_SPEED && (stateOp == OP_MOW) && !adaptivespeed.AS_mowDriveRevers) linear = linear * adaptivespeed.setSpeedOffset(); // add speedoffset by use of ADAPTIVE_SPEED
         if (linear > 0) { // pos value
           if (linearSpeedSet < 0) linearSpeedSet = linearSpeedSet + decStep; // noch pos
           else if (linearSpeedSet < linear) linearSpeedSet = linearSpeedSet + accStep; // speed up
@@ -282,7 +239,7 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
       }
      
    } else {
-     if (ADAPTIVE_SPEED) linear = linear * SpeedOffset; // X 
+     if (ADAPTIVE_SPEED && (stateOp == OP_MOW) && !adaptivespeed.AS_mowDriveRevers) linear = linear * adaptivespeed.setSpeedOffset(); // add speedoffset by use of ADAPTIVE_SPEED
      linearSpeedSet = linear;
 //     angularSpeedSet = angular;
    }
@@ -297,6 +254,7 @@ void Motor::setLinearAngularSpeed(float linear, float angular, bool useLinearRam
       linearSpeedSet = max(linearSpeedSet,-1*MOTOR_MAX_SPEED); //If negative linear is less than -MAXSPEED, use -MAXSPEED as limit
     }
 */
+   adaptivespeed.getActDriveSpeedValue(linearSpeedSet, angularSpeedSet);
    angularSpeedSet = angular;
    float rspeed = linearSpeedSet + angularSpeedSet * (wheelBaseCm /100.0 /2);          
    float lspeed = linearSpeedSet - angularSpeedSet * (wheelBaseCm /100.0 /2);          
@@ -327,6 +285,8 @@ void Motor::enableTractionMotors(bool enable){
 void Motor::setMowState(bool switchOn){
   //CONSOLE.print("Motor::setMowState ");
   //CONSOLE.println(switchOn);
+  if ((enableMowMotor) && (switchOn)) adaptivespeed.getMowIsOn(true);
+  else adaptivespeed.getMowIsOn(false);
   if ((enableMowMotor) && (switchOn)){
     if (!mowMsgTrg){
       CONSOLE.println("Mowmotor switched on");
@@ -592,7 +552,7 @@ bool Motor::checkOdometryError() {
 void Motor::checkOverload(){
   motorLeftOverload = (motorLeftSenseLP > MOTOR_OVERLOAD_CURRENT);
   motorRightOverload = (motorRightSenseLP > MOTOR_OVERLOAD_CURRENT);
-  motorMowOverload = (motorMowSenseMed > MOW_OVERLOAD_CURRENT); //X
+  motorMowOverload = (motorMowSenseLP > MOW_OVERLOAD_CURRENT); //X
   if (motorLeftOverload || motorRightOverload || motorMowOverload){
     if (motorOverloadDuration == 0){
       CONSOLE.print("ERROR motor overload (average current too high) - duration=");
@@ -651,8 +611,6 @@ void Motor::sense(){
   motorRightSenseLP = lp * motorRightSenseLP + (1.0-lp) * motorRightSense;
   motorLeftSenseLP = lp * motorLeftSenseLP + (1.0-lp) * motorLeftSense;
   motorMowSenseLP = lp * motorMowSenseLP + (1.0-lp) * motorMowSense; 
-  samples.add(motorMowSense); //Puts Values of motorMowSense into median function
-  motorMowSenseMed = samples.getMedian(); //Get the Running Median as motorMowSenseMed
   motorsSenseLP = motorRightSenseLP + motorLeftSenseLP + motorMowSenseLP;
   motorRightPWMCurrLP = lp * motorRightPWMCurrLP + (1.0-lp) * ((float)motorRightPWMCurr);
   motorLeftPWMCurrLP = lp * motorLeftPWMCurrLP + (1.0-lp) * ((float)motorLeftPWMCurr);

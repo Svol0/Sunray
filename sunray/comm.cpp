@@ -230,6 +230,77 @@ void cmdMowMotorTest(){
   motor.testMow();  
 }
 //END Svol0 TestMowMotor
+//Svol0 Svol0 Statistic Output from AdaptivSpeed
+void cmdAdaptiveSpeedStatOut(){
+  String s = F("ASS");
+  cmdAnswer(s);
+  adaptivespeed.statisticsOutput();  
+}
+
+void cmdAdaptiveSpeedStatReset(){
+  adaptivespeed.statisticsReset();
+  String s = F("ASR");
+  cmdAnswer(s);
+}
+
+void cmdAdaptiveSpeedDebug(){
+  adaptivespeed.debugOut();// toggle debug output  
+  String s = F("ASD");
+  cmdAnswer(s);
+}
+
+void cmdAdaptiveSpeedHelp(){
+  adaptivespeed.helpOutput();
+  String s = F("AS?");
+  cmdAnswer(s);
+}
+
+// request operation
+void cmdAdaptiveSpeedControl(){
+  if (cmd.length()<6) return;
+  int iMode = 0; float fValue1  = 0; float fValue2  = 0; float fValue3  = 0; float fValue4  = 0; int iValue5    = 0; int iValue6    = 0;
+  
+  int counter = 0;
+  int lastCommaIdx = 0;
+
+  float wayPerc = -1;  
+  for (int idx=0; idx < cmd.length(); idx++){
+    char ch = cmd[idx];
+    //Serial.print("ch=");
+    //Serial.println(ch);
+    if ((ch == ',') || (idx == cmd.length()-1)){
+      int intValue = cmd.substring(lastCommaIdx+1, idx+1).toInt();
+      float floatValue = cmd.substring(lastCommaIdx+1, idx+1).toFloat();
+      if (counter == 1){                      // AdaptivSpeed Mode (ADAPTIVE_SPEED_ALGORITHM)                          
+          if (intValue > 0) {
+            iMode = intValue;
+          }
+      } else if (counter == 2){
+          if (floatValue >= 0) fValue1 = floatValue; 
+      } else if (counter == 3){
+          if (floatValue >= 0) fValue2 = floatValue; 
+      } else if (counter == 4){
+          if (floatValue >= 0) fValue3 = floatValue; 
+      } else if (counter == 5){
+          if (floatValue >= 0) fValue4 = floatValue; 
+      } else if (counter == 6){                               
+          if (intValue >= 0) iValue5 = intValue; 
+      } else if (counter == 7){                               
+          if (intValue >= 0) iValue6 = intValue; 
+      }
+      counter++;
+      lastCommaIdx = idx;
+    }    
+  }      
+
+  adaptivespeed.getCommand(iMode, fValue1, fValue2, fValue3, fValue4, iValue5 , iValue6);
+  
+  String s = F("ASC");
+  cmdAnswer(s);
+  
+}
+//END Svol0 Statistic Output from AdaptivSpeed
+
 void cmdMotorPlot(){
   String s = F("Q");
   cmdAnswer(s);
@@ -571,8 +642,8 @@ void cmdSummary(){
   s += ",";
   s += motor.motorLeftSenseLP;      // 20 Motorstrom Antriebsmotor links gemittelt
   s += ",";
- // s += motor.motorMowSenseLP;     // 21 Aktueller Motorstrom Mähmotor
-  s += motor.motorMowSenseMed;      // 21 Motorstrom Mähmotor gemittelt
+  s += motor.motorMowSenseLP;     // 21 Aktueller Motorstrom Mähmotor
+ // s += motor.motorMowSenseMed;      // 21 Motorstrom Mähmotor gemittelt
   s += ",";
   s += motor.motorRightRpmCurrLP;   // 22 Abtriebsdrehzahl Antriebsmotor rechts
   s += ",";
@@ -672,6 +743,7 @@ void cmdClearStats(){
   statMowLiftCounter = 0;
   statMowGPSMotionTimeoutCounter = 0;
   statGPSJumps = 0;
+  adaptivespeed.statisticsReset(); // reset statistic values for AdaptivSpeed
   cmdAnswer(s);  
 }
 
@@ -828,6 +900,21 @@ void processCmd(bool checkCrc, bool decrypt){
   if (cmd[0] != 'A') return;
   if (cmd[1] != 'T') return;
   if (cmd[2] != '+') return;
+  if (cmd[3] == 'A') {
+    if (cmd.length() <= 4){
+      ; // nothing
+    } else {
+      if (cmd.length() <= 6){
+        if (cmd[4] == 'S') {
+          if (cmd[5] == 'D') cmdAdaptiveSpeedDebug();      // Svol0 debug output from AdaptiveSpeed            AT+ASD
+          if (cmd[5] == 'R') cmdAdaptiveSpeedStatReset();  // Svol0 Reset statistic output from AdaptiveSpeed  AT+ASR
+          if (cmd[5] == 'S') cmdAdaptiveSpeedStatOut();    // Svol0 statistic output from AdaptiveSpeed        AT+ASS
+          if (cmd[5] == '?') cmdAdaptiveSpeedHelp();       // Svol0 output of console features                 AT+AS?
+        }
+        
+      } else if (cmd[5] == 'C') cmdAdaptiveSpeedControl();    // Svol0 Change AdaptiveSpeed parameter for testing  AT+ASC
+    }
+  }
   if (cmd[3] == 'S') cmdSummary();
   if (cmd[3] == 'M') cmdMotor();
   if (cmd[3] == 'C'){ 

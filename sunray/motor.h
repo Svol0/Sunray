@@ -55,7 +55,6 @@ class Motor {
     float motorRightRpmCurrLP;
     float motorMowRpmCurrLP;
     float motorMowPWMCurr; 
-    float motorMowSenseMed; //mower motor current (amps, Median) //X
     unsigned long motorMowSpinUpTime;
     void begin();
     void run();      
