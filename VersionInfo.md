@@ -1,4 +1,4 @@
-## Diese Version entspricht der Sunray master Version 1.0.282 mit zusätzlichen Funktionen:
+## Diese Version entspricht der Sunray master Version 1.0.286 SE mit zusätzlichen Funktionen:
 - Damit diese Version kompiliert werden kann, wird zusätzlich die Bibliothek „RunningMedian“ von Rob Tillaart benötigt. Diese kann in der Arduino IDE durch den Bibliotheksverwalter (Strg+Umschalt+I) installiert werden. Als Version habe ich die 0.3.6 genommen.
 - Die Parameter, die in dieser Auflistung erwähnt werden sind in der **config_example.h** enthalten. Eine kurze Beschreibung und die Einheit des Parameters ist meistens vorhanden.
 ---
@@ -62,13 +62,13 @@ Es kann vorkommen, dass ein Ast oder anderer Fremdkörker den Bumper so blockier
 Mit dem Parameter **BUMPER_MAX_TRIGGER_TIME** kann eine maximale permanente Betätigungsdauer in Sekunden festgelegt werden. Bei Überschreitung wird ein Bumper-Fehler ausgelöst und der Mäher bleibt stehen. Ein Wert von 0 (Null) deaktiviert die Überwachung.
 
 ---
-### AUSLÖSEVERZÖGERUNG DES BUMPER
+### AUSLÖSEVERZÖGERUNG DES BUMPER von timotto
 Mit dem Parameter **BUMPER_TRIGGER_DELAY** kann die Verzögerung in Millisekunden für das Auslösen des Bumpers eingestellt werden. Wenn der Bumper z.B. nur kurz durch einen etwas stärkeren Grashalm ausgelöst wird, kann durch den hier Eingestellten Wert dieses einmalige Ereignis unterdrückt werden. Steht der Wert z.B. auf 200, so würde kein Hindernis erkannt werden, wenn der Bumper kürzer als 200ms betätigt wird. Wird die Zeit überschritten, wird die Hindernisumfahrung aktiviert.
 
 ---
 ### SKALIERUNG DER STANLEY-PARAMETER von MrTreeBark  
 Mit dem Parameter **MAP_STANLEY_CONTROL** auf true werden die Stanley-Parameter für die langsame (**DOCKANGULARSPEED**) und die normale (**MOTOR_MAX_SPEED**) linear über den gesamten Geschwindigkeitsbereich von **MOTOR_MIN_SPEED** bis **MOTOR_MAX_SPEED** im Verhältnis zugeordnet. Dieses sollte zu einem deutlich besserem Regelverhalte führen, da die Stanley-Werte der Geschwindigkeit entsprechend skaliert werden.  
-**Beispiel:**  
+***Beispiel:***  
 **STANLEY_CONTROL_K_SLOW**   0.1  
 **STANLEY_CONTROL_K_NORMAL** 1.0  
 **MAP_STANLEY_CONTROL** true 
@@ -84,7 +84,7 @@ Mit dem Parameter **MAP_STANLEY_CONTROL** auf true werden die Stanley-Parameter 
 ---
 ### MÄHMOTORTEST
 Der Mähmotortest kann per Serial monitor mit Kommando AT+D aktiviert werden. Über den Serial monitor werden dabei Informationen für den Ablauf des Testes ausgegeben.
-Beschreibung des Ablaufs:
+***Beschreibung des Ablaufs:***
 - AT+D in der Konsole eingeben
 - START/STOP Taste mind. 5 Sekunden gedrückt halten, bis ein akustisches Signal ertönt
 - In weniger als 10 Sekunden wird der Mähmotor gestartet. Akustische Signale weisen als Warnung darauf hin.
@@ -138,10 +138,69 @@ Um die Werte bei Verwendung von BL-Treibern zu ermitteln, kann wie folgt vorgega
 Nachdem man anschließend das Projekt neu kompiliert und übertragen hat, sollte jetzt der in der App angezeigte Wert mit dem realen Wert übereinstimmen.
 
 ---
+### ADAPTIVE SPEED FUNKTION
+
+Die Adaptive Speed Funktion bietet die Möglichkeit, die Fahr- und Mähgeschwindigkeit bei unterschiedlicher Belastung des Mähmotors anzupassen.
+Es stehen 2 unterschiedliche Modi zur Verfügung. Die Modi können mit **ADAPTIVE_SPEED_ALGORITHM ausgewählt** werden:
+- 1 = ein einfacher 2-Punkt Regler. Es wird zwischen den Einstellungen für niedrige und hohe Mähmotorlast mit Schalthysterese in Abhängigkeit der Mähmotorlast gewechselt.
+- 2 = ein 3-Punkt Regler. Es wird zwischen 3 Einstellungen mit Schalthysterese für niedrige, mittlere und hohe Mähmotorlast gewechselt. In diesem Modus wird der Mähmotorstrom für die minimale (**MIN_MOW_RPM**) und die maximale Drehzahl (**MAX_MOW_RPM**) im Leerlauf automatisch Ermittelt und über einen einstellbaren Faktor bestimmt, wann welche Leistungsstufe verwendet wird. Die automatische Ermittlungen der erfolgt an den Wendepunkten, wenn die Fahrgeschwindigkeit = Null ist und der Mäher nur auf der Stelle dreht. Es wird ein Mittelwert innerhalb der jeweiligen Leistungsstufen über mehrere Messungen gebildet.
+Wenn der Mäher mit den Einstellungen für niedrige Last unterwegs ist und ein starker Anstieg des Mähmotorstroms erkannt wird, schaltete der Mäher sofort auf die Einstellung für hohe Last um und fährt ein kurzes Stück zurück, um erneut in den Mähbereich mit erhöhtem Leistungsbedarf zu fahren. (Das Rückwärtsfahren erfolgt nur für eine Strecke von ca. 40cm bzw. höchstens bis zum vorherigen Wegpunkt). Die mittlere Laststufe wird per Mittelwert aus den Einstellungen für niedrige und hohe Laststufe gebildet.
+
+***PARAMETER FÜR MODUS 1 & 2:***  
+**SPEED_FACTOR_MIN** = Dieses ist der Faktor, mit dem die maximale Fahrgeschwindigkeit **MOTOR_MAX_SPEED** multipliziert wird, wenn die Einstellungen für höhere Mähmotorlast aktiv sind.  
+- ***Beispiel:***  
+#define MOTOR_MAX_SPEED 0.40 // m/s  
+#define SPEED_FACTOR_MIN 0.5  
+0.40m/s x 0.5 = 0.20m/s  
+Der Mäher würde dann nur noch mit 0.20m/s fahren, wenn die Einstellungen für höhere Mähmotorlast aktiv sind.  
+
+**SPEED_FACTOR_MAX** = Dieses ist der Faktor, mit dem die maximale Fahrgeschwindigkeit **MOTOR_MAX_SPEED** multipliziert wird, wenn die Einstellungen für niedrige Mähmotorlast aktiv sind.  
+- ***Beispiel:***  
+#define MOTOR_MAX_SPEED 0.40 // m/s  
+#define SPEED_FACTOR_MAX 1.0  
+0.40m/s x 1.0 = 0.40m/s  
+Der Mäher würde dann mit 0.40m/s fahren, wenn die Einstellungen für niedrige Mähmotorlast aktiv sind. Dieser Parameter ist dazu gedacht, dass man theoretisch eine langsamere Geschwindigkeit als die maximal mögliche Fahrgeschwindigkeit für den normalen Mähvorgang verwenden kann, um im manuellen Betrieb per Controller oder App-Joystick eine höhere Geschwindigkeit fahren zu können.  
+
+**MOTOR_MIN_SPEED** = Geschwindigkeitswert für den Mähmotor bei niedriger Laststufe. Möglicher Wertebereich 0 - **MOTOR_MAX_SPEED**.  
+
+**MOTOR_MAX_SPEED** = Geschwindigkeitswert für den Mähmotor bei hoher Laststufe. Möglicher Wertebereich **MOTOR_MIN_SPEED** - 255.  
 
 
+***ZUSÄTZLICHE PARAMETER FÜR MODUS 1:***  
+**SPEEDDOWNCURRENT** = Bei überschreiten des hier eingestellten Stromes für den Mähmotor wird die maximale Fahrgeschwindigkeit auf den bei **SPEED_FACTOR_MIN** eingestellten Faktor gesetzt und der Mähmotor auf den unter **MAX_MOW_RPM** eingestellten Wert geschleunigt.  
 
-- **Reboot GPS at a specific docking point**
+**SPEEDUPCURRENT** = Wird der hier eingestellte Strom für den Mähmotor für eine Dauer von 10 Sekunden kontinuierlich unterschritten, wird die Fahrgeschwindigkeit auf dem bei **SPEED_FACTOR_MAX** eingestellten Faktor gesetzt und der Mähmotor auf den unter **MIN_MOW_RPM** eingestellten Wert verzögert.  
+
+**MOWMOTOR_CURRENT_MEDIAN_LEN** = Die Höhe des hier eingestellten Wertes bestimmt, wie schnell auf eine Laständerung (Anstieg des Mähmotorstroms) reagiert wird. Bei hohen Werten werden kurzfristige Überschreitungen des bei **SPEEDDOWNCURRENT** eingestellten Wertes ignoriert. Niedrige Werte führen zu einem schnelleren Umschalten auf die Einstellung für höhere Mähmotorlast.
+
+
+***ZUSÄTZLICHE PARAMETER FÜR MODUS 2:***  
+**CURRENT_FACTOR_HIGH_LOAD** = Dieser Faktor gibt an, um das wieviel Fache der Mähmotorstrom kurzzeitig gegenüber dem ermittelten Leerlaufstrom bei niedriger Laststufe mit einer Mähmotorgeschwindigkeit von **MIN_MOW_RPM** überschritten sein muss, damit auf hohe Laststufe geschaltet wird.  
+
+**CURRENT_FACTOR_MIDDLE_LOAD** = Dieser Faktor gibt an, um das wieviel Fache der Mähmotorstrom gegenüber dem Leerlaufstrom bei einer Mähmotorgeschwindigkeit von **MIN_MOW_RPM** überschritten sein muss, damit auf mittlere Laststufe geschaltet wird.  
+
+---  
+***Um das Ermitteln und Einstellen der Parameter zu erleichtern, können Werte und Informationen über AT-Kommandos im Serial Monitor angezeigt bzw. verändert werden.***  
+Folgende AT-Kommandos stehen zur Verfügung:  
+ **AT+AS?** = Anzeige einer Übersicht über die Möglichen AT-Kommandos.  
+ **AT+ASD** = Aktivieren/Deaktivieren des Debug-Modus, um die Funktion/Arbeitsweise von Adaptiv-Speed kontrollieren zu können.  
+ **AT+ASS** = gibt eine Statistik über die erfassten Stromwerte und Mähzeiten in den jeweiligen Leistungsstufen aus.  
+ **AT+ASR** = setzt die Statistik zurück. Die Statistik wird ebenfalls zurückgesetzt, wenn der Modus (ADAPTIVE_SPEED_ALGORITHM) gewechselt, oder die Statistic über die Sunray-App zurückgesetzt wird.  
+
+ **AT+ASC,Modus,Wert1,Wert2,Wert3,Wert4,Wert5,Wert6,**  
+Über dieses Kommando können die Einstellungen zur Laufzeit geändert werden, um neue Werte testen zu können
+- **Modus:** 1 = 2-Punkt-Regler; 2 = 3-Punkt-Regler  
+- **Wert1:** Wert für SPEED_FACTOR_MIN  
+- **Wert2:** Wert für SPEED_FACTOR_MAX  
+- **Wert3:** Bei Modus 1: Wert für SPEEDDOWNCURRENT; Bei Modus 2: Wert für CURRENT_FACTOR_HIGH_LOAD;  
+- **Wert4:** Bei Modus 1: Wert für SPEEDUPCURRENT; Bei Modus 2: Wert für CURRENT_FACTOR_MIDDLE_LOAD;  
+- **Wert5:** Wert für MIN_MOW_RPM  
+- **Wert6:** Wert für MAX_MOW_RPM  
+
+***!!!NICHT VERGESSEN SPÄTER DIE ERMITTELTEN PARAMETER IN DIE CONFIG.H EINZUTRAGEN!!!***
+---
+
+### Reboot GPS at a specific docking point
   - Bei Fahrt zur Docking-Station wird über den Parameter Wert von "DOCK_SLOW_ONLY_LAST_POINTS" die Position des Dockingpunktes angegeben (betrachtet aus Richtung Dockingstation), ab welchem mit langsamer Geschwindigkeit (linear = 0,1) weiter gefahren wird. Alle Dockingpunkte vorher werden mit der normalen (setspeed) Geschwindigkeit angefahren. Ein Wert von "Null" bewirkt, dass alle Punkte mit langsamer Geschwindigkeit angefahren werden.
   - Geht GPS-Fix auf dem Weg zwischen dem vorletzten Dockingpunkt und der Dockingstation verloren, wird die Fahrt mit IMU und ODO fortgesetzt.
   - Bei Fahrt aus der Docking-Station wird über den Parameter Wert von "DOCK_POINT_GPS_REBOOT" die Position des Dockingpunktes angegeben (betrachtet aus Richtung Dockingstation), ab welchem ein GPS-Reboot durchgeführt werden soll. Der Mäher wartet dann, bis ein GPS-Fix vorhanden ist, und setzt das undocking fort. Da der Mäher dann eine korrekte Position hat, wird der Rest der Dockingstrecke vorwärts gerichtet, mit normaler Geschwindigkeit und GPS-Unterstützung fortgesetzt. Bei aktiviertem "DOCK_IGNORE_GPS" wird nur bis zum GPS-Reset Punkt ohne GPS-Unterstützung gefahren. Ein Wert von "Null" bewirkt keinen GPS-Reboot beim undocking.
@@ -158,6 +217,3 @@ Nachdem man anschließend das Projekt neu kompiliert und übertragen hat, sollte
 
   Wer kein akustisches Feedback möchte, kann alle Zeilen die mit "if (!buzzer.isPlaying())" beginnen einfach auskommentieren.
   Zur Zeit sind auch noch Consolen-Ausgaben vorhanden, um eine bessere Kontrolle der Funktion beim testen zu haben.
-
-- **reduced bumper sensitivity by timotto**
-If the bumper spring strength is weaker than the lawn and causing the bumper to trigger regularly. This configuration option BUMPER_TRIGGER_DELAY in config.h delays the bumper trigger by the given milliseconds.
