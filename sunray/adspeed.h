@@ -26,8 +26,9 @@ class AdaptiveSpeed {
     bool AS_mowCurrUpdateTrg;
     bool AS_mowSpeedInfoTrg;
     
-    
-    float AS_maxMowSense  = 0;                // maximum measured mowmotor current
+    // for statistics
+    float AS_maxMowSense  = 0;                // maximum measured mowmotor current at stable RPM
+    float AS_maxMowSenseSpeedChange  = 0;     // maximum measured mowmotor current during speed change
     float AS_MowSenseAtIdleMIN_MOW_RPM = 0;   // mowmotor current at MIN_MOW_RPM in idle
     float AS_MowSenseAtIdleMAX_MOW_RPM = 0;   // mowmotor current at MAX_MOW_RPM in idle
     unsigned long AS_MowDurationAtMIN_MOW_RPM = 0;

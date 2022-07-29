@@ -74,7 +74,8 @@ AS_iMaxMowRpm         = MAX_MOW_RPM;
 
 
 //statistic
-AS_maxMowSense  = 0;                // maximum measured mowmotor current
+AS_maxMowSense  = 0;                // maximum measured mowmotor current at stable RPM
+AS_maxMowSenseSpeedChange  = 0;     // maximum measured mowmotor current during speed change
 AS_MowSenseAtIdleMIN_MOW_RPM = 0;   // mowmotor current at MIN_MOW_RPM in idle
 AS_MowSenseAtIdleMAX_MOW_RPM = 0;   // mowmotor current at MAX_MOW_RPM in idle
 AS_MowDurationAtMIN_MOW_RPM = 0;
@@ -201,6 +202,7 @@ CONSOLE.println(AS_pwmMowOut);
 
         // reset speed steps if mowmotor is of
         if (!AS_mowMotorIsOn && (AS_speedStep != 0)){
+          if (AS_DEBUGMODE) CONSOLE.println("ADAPTIVE_SPEED - mow motor was switched off!");
           AS_speedStep = 0;
         }
 
@@ -345,6 +347,7 @@ CONSOLE.println(AS_pwmMowOut);
                 AS_speedStep = 20; // go to middel load
               }
             } else AS_Timer = millis();  // reset timer
+            if (AS_linear < (MOTOR_MIN_SPEED/2)) AS_Timer = millis();  // reset timer if mower stops or is turning on waypoints
             break;
 
           case 20: // drive at middle speed with middle mow speed
@@ -375,6 +378,7 @@ CONSOLE.println(AS_pwmMowOut);
                 AS_speedStep = 30; // go to high load
               }              
             } else AS_Timer = millis();  // reset timer
+            if (AS_linear < (MOTOR_MIN_SPEED/2)) AS_Timer = millis();  // reset timer if mower stops or is turning on waypoints
             break;
             
           case 30: // drive at low speed with high mow speed
@@ -393,6 +397,7 @@ CONSOLE.println(AS_pwmMowOut);
                 AS_speedStep = 20; // go to middle load  
               }
             } else AS_Timer = millis();  // reset timer
+            if (AS_linear < (MOTOR_MIN_SPEED/2)) AS_Timer = millis();  // reset timer if mower stops or is turning on waypoints
             break;
 
           default:
@@ -494,7 +499,8 @@ CONSOLE.println(AS_pwmMowOut);
       ((AS_pwmMowOut == ((AS_iMinMowRpm + AS_iMaxMowRpm)/2)) && (abs(AS_pwmMow - ((AS_iMinMowRpm + AS_iMaxMowRpm)/2)) <= 2)) || 
       ((AS_pwmMowOut == AS_iMaxMowRpm) && (abs(AS_pwmMow - AS_iMaxMowRpm) <= 2))){
       if (AS_motorMowSenseMed > AS_maxMowSense) AS_maxMowSense = AS_motorMowSenseMed;
-    }
+    } else if (AS_motorMowSenseMed > AS_maxMowSenseSpeedChange) AS_maxMowSenseSpeedChange = AS_motorMowSenseMed;  // update AS_maxMowSenseSpeedChange during speed changes
+    
 
     AS_SpeedOffset = min(AS_fSpeedFactorMax, max(AS_fSpeedFactorMin, AS_SpeedOffset));
 //  } else if ((AS_pwmMow = 0) && (ADAPTIVE_SPEED)) AS_SpeedOffset = SPEED_FACTOR_MAX;  
@@ -502,7 +508,7 @@ CONSOLE.println(AS_pwmMowOut);
 
 void AdaptiveSpeed::statisticsOutput(){
   CONSOLE.println("------------------------------------------------------");
-  CONSOLE.println("ADAPTIVESPEED STATISTIC OUTPUT:");
+  CONSOLE.println("ADAPTIVE_SPEED STATISTIC OUTPUT:");
   CONSOLE.print(" Mowtime with MIN_MOW_RPM : ");
   CONSOLE.print((AS_MowDurationAtMIN_MOW_RPM / 60000));
   CONSOLE.println("min");
@@ -514,8 +520,11 @@ void AdaptiveSpeed::statisticsOutput(){
   CONSOLE.print(" Mowtime with MAX_MOW_RPM : ");
   CONSOLE.print((AS_MowDurationAtMAX_MOW_RPM / 60000));
   CONSOLE.println("min");
-  CONSOLE.print(" Maximum mow motor current: ");
+  CONSOLE.print(" Maximum mow motor current at stable speed: ");
   CONSOLE.print(AS_maxMowSense);
+  CONSOLE.println("A");
+  CONSOLE.print(" Maximum mow motor current at speed change: ");
+  CONSOLE.print(AS_maxMowSenseSpeedChange);
   CONSOLE.println("A");
   if (AS_iAdaptiveSpeedAlgorithm == 2){  
     CONSOLE.print(" Mow motor idle current at MIN_MOW_RPM: ");
@@ -533,6 +542,7 @@ void AdaptiveSpeed::statisticsOutput(){
 void AdaptiveSpeed::statisticsReset(){
   //statistic
 AS_maxMowSense  = 0;                // maximum measured mowmotor current
+AS_maxMowSenseSpeedChange = 0;
 AS_MowSenseAtIdleMIN_MOW_RPM = 0;   // mowmotor current at MIN_MOW_RPM in idle
 AS_MowSenseAtIdleMAX_MOW_RPM = 0;   // mowmotor current at MAX_MOW_RPM in idle
 AS_MowDurationAtMIN_MOW_RPM = 0;
@@ -544,11 +554,11 @@ CONSOLE.println("ADAPTIVE_SPEED - History was cleared!");
 
 void AdaptiveSpeed::helpOutput(){
   CONSOLE.println("------------------------------------------------------");
-  CONSOLE.println("ADAPTIVESPEED HELP OUTPUT:");
+  CONSOLE.println("ADAPTIVE_SPEED HELP OUTPUT:");
   CONSOLE.println(" AT COMMAND: ");
-  CONSOLE.println("  AT+ASC : for setting up the adaptivespeed feature it is possible to send AT command to change parameter during run");
+  CONSOLE.println("  AT+ASC : for setting up the adaptive_speed feature it is possible to send AT command to change parameter during run");
   CONSOLE.println("           AT+ASC,mode,value1,value2,value3,value4,value5,value6,");
-  CONSOLE.println("           AT+ASC,1,0.5,1.0,0.8,0.6,170,210,");
+  CONSOLE.println("           example: AT+ASC,1,0.5,1.0,0.8,0.6,170,210,");
   CONSOLE.println("           mode:   1 = 2 step controller | 2 = 3 step controller with automatic current setpoint");
   CONSOLE.println("           value1: SPEED_FACTOR_MIN      | SPEED_FACTOR_MIN");
   CONSOLE.println("           value2: SPEED_FACTOR_MAX      | SPEED_FACTOR_MAX");
@@ -590,25 +600,25 @@ void AdaptiveSpeed::getCommand(int mode, float value1, float value2, float value
   if (mode == 1 || mode == 2){
     CONSOLE.println("ADAPTIVESPEED use new parameter settings. Do not forget to save parameters in config.h if you find the pefect values");
     CONSOLE.print(" ADAPTIVE_SPEED_ALGORITHM: ");
-    CONSOLE.print(AS_iAdaptiveSpeedAlgorithm);
+    CONSOLE.println(AS_iAdaptiveSpeedAlgorithm);
     CONSOLE.print(" SPEED_FACTOR_MIN: ");
-    CONSOLE.print(AS_fSpeedFactorMin);
+    CONSOLE.println(AS_fSpeedFactorMin);
     CONSOLE.print(" SPEED_FACTOR_MAX: ");
-    CONSOLE.print(AS_fSpeedFactorMax);
+    CONSOLE.println(AS_fSpeedFactorMax);
     if (mode == 1){
       CONSOLE.print(" SPEEDDOWNCURRENT: ");
-      CONSOLE.print(AS_fSpeedDownCurrent);
+      CONSOLE.println(AS_fSpeedDownCurrent);
       CONSOLE.print(" SPEEDUPCURRENT: ");
-      CONSOLE.print(AS_fSpeedUpCurrent);
+      CONSOLE.println(AS_fSpeedUpCurrent);
     } else if (mode == 2){
       CONSOLE.print(" CURRENT_FACTOR_HIGH_LOAD: ");
-      CONSOLE.print(AS_fCurrentFactorHighLoad);
+      CONSOLE.println(AS_fCurrentFactorHighLoad);
       CONSOLE.print(" CURRENT_FACTOR_MIDDLE_LOAD: ");
-      CONSOLE.print(AS_fCurrentFactorMiddleLoad);
+      CONSOLE.println(AS_fCurrentFactorMiddleLoad);
     }
     
     CONSOLE.print(" MIN_MOW_RPM: ");
-    CONSOLE.print(AS_iMinMowRpm);
+    CONSOLE.println(AS_iMinMowRpm);
     CONSOLE.print(" MAX_MOW_RPM: ");
     CONSOLE.println(AS_iMaxMowRpm);
   }
