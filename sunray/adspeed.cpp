@@ -87,7 +87,7 @@ AS_millisDiv  = 0;
 
 AS_Timer = 0;
 RM_mowCurrNoLoad_MinSpeed.add(AS_fSpeedUpCurrent); //Puts Values of motorMowSense into median function
-RM_mowCurrNoLoad_MaxSpeed.add(AS_fSpeedUpCurrent); //Puts Values of motorMowSense into median function
+RM_mowCurrNoLoad_MaxSpeed.add(AS_fSpeedDownCurrent); //Puts Values of motorMowSense into median function
 AS_mowCurrNoLoad_MaxSpeedMed = RM_mowCurrNoLoad_MaxSpeed.getMedian(); //Get the Running Median as motorMowSenseMed
 AS_mowCurrNoLoad_MinSpeedMed = RM_mowCurrNoLoad_MinSpeed.getMedian(); //Get the Running Median as motorMowSenseMed
 
@@ -150,6 +150,17 @@ CONSOLE.print(AS_SpeedOffset);
 CONSOLE.print(" AS_pwmMowOut: ");
 CONSOLE.println(AS_pwmMowOut);
 */
+
+                  CONSOLE.print("!!!AS_linear: ");
+                  CONSOLE.print(AS_linear);                
+                  CONSOLE.print(" AS_mowMotorIsOn:");
+                  CONSOLE.print(AS_mowMotorIsOn);
+                  CONSOLE.print(" AS_mowCurrUpdate: ");
+                  CONSOLE.print(AS_mowCurrUpdate);
+                  CONSOLE.print(" AS_speedStep: ");
+                  CONSOLE.print(AS_speedStep);
+                  CONSOLE.println("");
+
 }
 
   RM_motorMowSense.add(motor.motorMowSense); //Puts Values of motorMowSense into median function
@@ -409,24 +420,16 @@ CONSOLE.println(AS_pwmMowOut);
 
         switch (AS_mowCurrUpdate){
           case 0: // wait for linearSpeedSet = 0 (no linear movement of the robot, but mow motor is turning and has reached the setspeed)
-            if ((AS_linear < (MOTOR_MIN_SPEED/2)) && AS_mowMotorIsOn && (AS_speedStep > 0)){
+            if ((AS_linear < (MOTOR_MIN_SPEED)) && AS_mowMotorIsOn && (AS_speedStep > 0)){
               if (AS_mowDriveRevers) AS_mowCurrUpdate = 99;
               else AS_mowCurrUpdate = 1;
+
             }
-            /*
-                  CONSOLE.print(AS_linear);
-                  CONSOLE.print("!!!AS_linear: ");
-                  CONSOLE.print(AS_linear);                
-                  CONSOLE.print(" AS_mowMotorIsOn:");
-                  CONSOLE.print(AS_mowMotorIsOn);
-                  CONSOLE.print(" AS_mowCurrUpdate: ");
-                  CONSOLE.print(AS_mowCurrUpdate);
-                  CONSOLE.println("");
-*/
+            
             break;
 
           case 1: // wait for linearSpeedSet
-            if (AS_linear > (MOTOR_MIN_SPEED/2)){
+            if (AS_linear > (MOTOR_MIN_SPEED)){
               if (AS_mowMotorIsOn){
                 if ((AS_pwmMowOut == AS_iMaxMowRpm) && (abs(AS_pwmMow - AS_iMaxMowRpm) <= 3)){ 
                   RM_mowCurrNoLoad_MaxSpeed.add(AS_mowCurrForUpdate); //Puts Values of motorMowSense into median function
@@ -459,7 +462,7 @@ CONSOLE.println(AS_pwmMowOut);
             }
             break;  
           case 99:  // wait for normal speed
-            if ((AS_linear > (MOTOR_MIN_SPEED/2)) && !AS_mowMotorIsOn){
+            if ((AS_linear > (MOTOR_MIN_SPEED/2)) && !AS_mowDriveRevers){
               if (AS_DEBUGMODE) CONSOLE.println("ADAPTIV_SPEED - no idle current update cause of reverse drive!");
               AS_mowCurrUpdate = 0;
             }
