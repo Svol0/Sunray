@@ -29,6 +29,9 @@ unsigned long AS_lastControlTime = 0;
 unsigned long AS_lastCall = 0;
 unsigned long AS_millisDiv = 0;
 bool AS_DEBUGMODE = false;
+bool AS_fixActualLoad = false;
+bool AS_forceHighLoadUpdate = false;
+int AS_counterHighLoadUpdate = 0;
 
 int AS_iAdaptiveSpeedAlgorithm = 0;
 float AS_fSpeedFactorMin = 0;
@@ -60,6 +63,9 @@ AS_speedStep = 0;
 AS_mowCurrUpdate = 0;
 AS_linear = 0;
 AS_angular = 0;
+AS_fixActualLoad = false;
+AS_counterHighLoadUpdate = 0;
+AS_forceHighLoadUpdate = true;
 
 // intern variables for control
 AS_iAdaptiveSpeedAlgorithm = ADAPTIVE_SPEED_ALGORITHM;
@@ -86,8 +92,8 @@ AS_lastCall = millis();
 AS_millisDiv  = 0;
 
 AS_Timer = 0;
-RM_mowCurrNoLoad_MinSpeed.add(AS_fSpeedUpCurrent); //Puts Values of motorMowSense into median function
-RM_mowCurrNoLoad_MaxSpeed.add(AS_fSpeedDownCurrent); //Puts Values of motorMowSense into median function
+RM_mowCurrNoLoad_MinSpeed.add(0.1); //Puts Values of motorMowSense into median function
+RM_mowCurrNoLoad_MaxSpeed.add(0.5); //Puts Values of motorMowSense into median function
 AS_mowCurrNoLoad_MaxSpeedMed = RM_mowCurrNoLoad_MaxSpeed.getMedian(); //Get the Running Median as motorMowSenseMed
 AS_mowCurrNoLoad_MinSpeedMed = RM_mowCurrNoLoad_MinSpeed.getMedian(); //Get the Running Median as motorMowSenseMed
 
@@ -149,7 +155,7 @@ CONSOLE.print(" AS_SpeedOffset: ");
 CONSOLE.print(AS_SpeedOffset);
 CONSOLE.print(" AS_pwmMowOut: ");
 CONSOLE.println(AS_pwmMowOut);
-*/
+
 
                   CONSOLE.print("!!!AS_linear: ");
                   CONSOLE.print(AS_linear);                
@@ -160,7 +166,7 @@ CONSOLE.println(AS_pwmMowOut);
                   CONSOLE.print(" AS_speedStep: ");
                   CONSOLE.print(AS_speedStep);
                   CONSOLE.println("");
-
+*/
 }
 
   RM_motorMowSense.add(motor.motorMowSense); //Puts Values of motorMowSense into median function
@@ -173,6 +179,7 @@ CONSOLE.println(AS_pwmMowOut);
     AS_lastCall = millis();
     
     switch (AS_iAdaptiveSpeedAlgorithm) {
+      //********************************************************************************************
       //Simple 2 point controller that applies a linear ramp to mowerspeed through a offset.
       //The delta of SPEEDDOWNCURRENT-SPEEDUPCURRENT is the hysteresis
       case 1:
@@ -207,7 +214,7 @@ CONSOLE.println(AS_pwmMowOut);
         if (AS_mowMotorIsOn && (AS_pwmMowOut == AS_iMaxMowRpm)) AS_MowDurationAtMAX_MOW_RPM += AS_millisDiv;
         break;
 
-
+      //********************************************************************************************
       // 3 point controller with automated idle current measurement to set the trigger points for mowmotor speedup and slowdown drive speed
       case 2:
 
@@ -223,7 +230,9 @@ CONSOLE.println(AS_pwmMowOut);
             AS_pwmMowOut   = AS_iMinMowRpm;
             if (AS_mowMotorIsOn && (millis() > motor.motorMowSpinUpTime + MOW_SPINUPTIME)){ //avoid trigger at speed up
               if (abs(AS_pwmMow - AS_pwmMowOut) <= 3){  // wait till setspeed is reached
-                if (AS_DEBUGMODE) CONSOLE.println("ADAPTIVE_SPEED - mow motor speed up finished!");
+                if (AS_DEBUGMODE) CONSOLE.print("ADAPTIVE_SPEED - mow motor speed up finished after ");
+                if (AS_DEBUGMODE) CONSOLE.print(((millis() - motor.motorMowSpinUpTime)/1000));
+                if (AS_DEBUGMODE) CONSOLE.println(" seconds");
                 AS_speedStep = 10; // start
               }
             }
@@ -270,7 +279,7 @@ CONSOLE.println(AS_pwmMowOut);
                     float wayAccRamp  = (mowerObstacleAvoidanceSpeed * (mowerAccRamp/1000)) / 2;
                     float wayDecRamp  = (mowerObstacleAvoidanceSpeed * (mowerDecRamp/1000)) / 2;    
                 
-                    float mowerObstacleAvoidanceWay = 0.4;  // es sollen 40cm zurückgefahren werden
+                    float mowerObstacleAvoidanceWay = 0.5;  // es sollen 50cm zurückgefahren werden
                     mowerObstacleAvoidanceWay = mowerObstacleAvoidanceWay + mowerWayTillStop; // Den Anhalteweg hinzufügen 
                     if (mowerObstacleAvoidanceWay > lastTargetDist) mowerObstacleAvoidanceWay = lastTargetDist; // Wenn die Entfernung zum letzten Wegpunkt kleiner als die Strecke zur Reversieren ist, wird nur bis zum Wegpunkt reversiert
                     float sBeschl = (mowerObstacleAvoidanceWay / (mowerAccRamp + mowerDecRamp))*mowerAccRamp;    // calculate the part of the reversway by acceleration
@@ -367,7 +376,7 @@ CONSOLE.println(AS_pwmMowOut);
             AS_MowDurationAtMID_MOW_RPM += AS_millisDiv;
 //            if (AS_motorMowSenseMed < (((AS_mowCurrNoLoad_MinSpeedMed + AS_mowCurrNoLoad_MaxSpeedMed) / 2) * 1.3)){
             if (AS_mowCurrForUpdate < (((AS_mowCurrNoLoad_MinSpeedMed + AS_mowCurrNoLoad_MaxSpeedMed) / 2) * (AS_fCurrentFactorMiddleLoad * 0.9))){
-              if ((millis() - AS_Timer) > 5000){ // if mow current is continously low, go speed step up
+              if (((millis() - AS_Timer) > 5000) && !AS_fixActualLoad){ // if mow current is continously low, go speed step up
                 AS_Timer = millis();  // reset timer
                 AS_mowReversTrg = false;
                 if (AS_DEBUGMODE) CONSOLE.println("ADAPTIV_SPEED - use low load setting");
@@ -398,7 +407,7 @@ CONSOLE.println(AS_pwmMowOut);
             AS_MowDurationAtMAX_MOW_RPM += AS_millisDiv;
             //if (AS_mowCurrForUpdate < (AS_mowCurrNoLoad_MaxSpeedMed * 1.3)){
             if (AS_mowCurrForUpdate < (AS_mowCurrNoLoad_MaxSpeedMed * (AS_fCurrentFactorMiddleLoad * 0.9))){
-              if ((millis() - AS_Timer) > 10000){ // if mow current is continously low, go speed step up
+              if (((millis() - AS_Timer) > 10000) && !AS_fixActualLoad){ // if mow current is continously low, go speed step up
                 AS_Timer = millis();  // reset timer
                 if (AS_DEBUGMODE) CONSOLE.println("ADAPTIVE_SPEED - use middle load setting");
                 if (AS_DEBUGMODE) CONSOLE.print("AS_mowCurrForUpdate: ");
@@ -420,7 +429,7 @@ CONSOLE.println(AS_pwmMowOut);
 
         switch (AS_mowCurrUpdate){
           case 0: // wait for linearSpeedSet = 0 (no linear movement of the robot, but mow motor is turning and has reached the setspeed)
-            if ((AS_linear < (MOTOR_MIN_SPEED)) && AS_mowMotorIsOn && (AS_speedStep > 0)){
+            if ((AS_linear < (MOTOR_MIN_SPEED/2)) && AS_mowMotorIsOn && (AS_speedStep > 0)){
               if (AS_mowDriveRevers) AS_mowCurrUpdate = 99;
               else AS_mowCurrUpdate = 1;
 
@@ -433,6 +442,7 @@ CONSOLE.println(AS_pwmMowOut);
               if (AS_mowMotorIsOn){
                 if ((AS_pwmMowOut == AS_iMaxMowRpm) && (abs(AS_pwmMow - AS_iMaxMowRpm) <= 3)){ 
                   RM_mowCurrNoLoad_MaxSpeed.add(AS_mowCurrForUpdate); //Puts Values of motorMowSense into median function
+                  AS_counterHighLoadUpdate += 1;  // count high load updates
                   if (AS_DEBUGMODE) CONSOLE.print("ADAPTIVE_SPEED - update idle mow current at MAX_MOW_RPM: ");
                 } else if ((AS_pwmMowOut == AS_iMinMowRpm) && (abs(AS_pwmMow - AS_iMinMowRpm) <= 3)){
                   RM_mowCurrNoLoad_MinSpeed.add(AS_mowCurrForUpdate); //Puts Values of motorMowSense into median function
@@ -487,6 +497,15 @@ CONSOLE.println(AS_pwmMowOut);
           CONSOLE.println(AS_linear);
 */
         }
+
+        // stay in actual load setting in the near of waypoints
+        if ((targetDist < 0.5) && ((AS_speedStep == 30) || (AS_speedStep == 20))) AS_fixActualLoad = true;
+        // foce idle Update at high load
+        else if ((targetDist < 5.0) && (AS_speedStep == 30) && AS_forceHighLoadUpdate) AS_fixActualLoad = true;
+        else AS_fixActualLoad = false;
+
+        // reset AS_forceHighLoadUpdate after 5 measurements
+        if (AS_counterHighLoadUpdate >= 5) AS_forceHighLoadUpdate = false;
         
         break;
       case 3:
@@ -594,8 +613,8 @@ void AdaptiveSpeed::getCommand(int mode, float value1, float value2, float value
     AS_iAdaptiveSpeedAlgorithm = mode;
     AS_fSpeedFactorMin    = value1;
     AS_fSpeedFactorMax    = value2;
-//    AS_fSpeedDownCurrent  = value3;
-//    AS_fSpeedUpCurrent    = value4;
+    AS_fCurrentFactorHighLoad  = value3;
+    AS_fCurrentFactorMiddleLoad    = value4;
     if (value5 > 0 && value5 <= 255) AS_iMinMowRpm = value5;
     if (value6 > 0 && value6 <= 255) AS_iMaxMowRpm = value6;
 

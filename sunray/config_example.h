@@ -248,9 +248,9 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define MOWMOTOR_CURRENT_MEDIAN_LEN 7      //Defines the medianlength of mowmotorcurrent measurement, smaller numbers: detect short load scenarios, higher numbers: short load scenarios won´t be "seen" and ignored. 12 is already quite low for reacting fast, tune for your needs.
 #define ADAPTIVE_SPEED_ALGORITHM 1 //Only option for now: (1) - 2Point Controller with hysteresis. The Hysteresis is the delta of SPEEDDOWNCURRENT and SPEEDUPCURRENT (e.g 0.2). In the hysteresis zone, speed is not changed
 #define SPEEDDOWNCURRENT 1.3 //The mower will slow down if mowmotorcurrent from median computation is greater than SPEEDDOWNCURRENT
-#define SPEEDUPCURRENT 0.9 //The mower will speed up if mowmotorcurrent from median computation is less than SPEEDUPCURRENT
-#define CURRENT_FACTOR_HIGH_LOAD    1.9   // used only in ADAPTIVE_SPEED_ALGORITHM 2. the ratio is specified by how much the motor current must be increased in comparison to the base load in order to switch to a high power level
-#define CURRENT_FACTOR_MIDDLE_LOAD  1.5   // used only in ADAPTIVE_SPEED_ALGORITHM 2. the ratio is specified by how much the motor current must be increased in comparison to the base load in order to switch to a high power level
+#define SPEEDUPCURRENT   0.9 //The mower will speed up if mowmotorcurrent from median computation is less than SPEEDUPCURRENT
+#define CURRENT_FACTOR_HIGH_LOAD    3.0   // used only in ADAPTIVE_SPEED_ALGORITHM 2. the ratio is specified by how much the motor current must be increased in comparison to the base load in order to switch to a high power level
+#define CURRENT_FACTOR_MIDDLE_LOAD  1.7   // used only in ADAPTIVE_SPEED_ALGORITHM 2. the ratio is specified by how much the motor current must be increased in comparison to the base load in order to switch to a high power level
 #define SPEED_FACTOR_MAX 1.0
 #define SPEED_FACTOR_MIN 0.5
 
