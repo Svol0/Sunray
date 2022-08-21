@@ -1,4 +1,4 @@
-## Diese Version entspricht der Sunray master Version 1.0.286 SE mit zusätzlichen Funktionen:
+## Diese Version entspricht der Sunray master Version 1.0.286 mit zusätzlichen Funktionen:
 - Damit diese Version kompiliert werden kann, wird zusätzlich die Bibliothek „RunningMedian“ von Rob Tillaart benötigt. Diese kann in der Arduino IDE durch den Bibliotheksverwalter (Strg+Umschalt+I) installiert werden. Als Version habe ich die 0.3.6 genommen.
 - Die Parameter, die in dieser Auflistung erwähnt werden sind in der **config_example.h** enthalten. Eine kurze Beschreibung und die Einheit des Parameters ist meistens vorhanden.
 ---
