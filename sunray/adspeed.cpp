@@ -92,7 +92,7 @@ AS_lastCall = millis();
 AS_millisDiv  = 0;
 
 AS_Timer = 0;
-RM_mowCurrNoLoad_MinSpeed.add(0.1); //Puts Values of motorMowSense into median function
+RM_mowCurrNoLoad_MinSpeed.add(0.5); //Puts Values of motorMowSense into median function
 RM_mowCurrNoLoad_MaxSpeed.add(0.5); //Puts Values of motorMowSense into median function
 AS_mowCurrNoLoad_MaxSpeedMed = RM_mowCurrNoLoad_MaxSpeed.getMedian(); //Get the Running Median as motorMowSenseMed
 AS_mowCurrNoLoad_MinSpeedMed = RM_mowCurrNoLoad_MinSpeed.getMedian(); //Get the Running Median as motorMowSenseMed
@@ -173,7 +173,10 @@ CONSOLE.println(AS_pwmMowOut);
   AS_motorMowSenseMed = RM_motorMowSense.getMedian(); //Get the Running Median as motorMowSenseMed
   AS_motorMowSense = motor.motorMowSense;
   RM_mowCurrLoadDetection.add(motor.motorMowSense); //Puts Values of motorMowSense into median function
-  AS_mowCurrForUpdate = RM_mowCurrLoadDetection.getMedian();
+  //AS_mowCurrForUpdate = RM_mowCurrLoadDetection.getMedian();
+  
+  float lp = 0.75; // 0.995
+  AS_mowCurrForUpdate = lp * AS_mowCurrForUpdate + (1.0-lp) * motor.motorMowSense; 
   
     AS_millisDiv = millis() - AS_lastCall;
     AS_lastCall = millis();
