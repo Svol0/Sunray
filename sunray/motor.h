@@ -72,7 +72,8 @@ class Motor {
     void stopImmediately(bool includeMowerMotor);
     float calcStopWay;  // calculated distance for stop from actual speed
     float motorMowPWMSet;  
-
+    bool reactivateBlockBlDriver;
+    
   protected: 
     float motorLeftRpmSet; // set speed
     float motorRightRpmSet;   

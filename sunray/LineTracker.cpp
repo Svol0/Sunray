@@ -315,7 +315,14 @@ void trackLine(bool runControl){
       mow = false;
     }
   } //if (dockGpsRebootState > 0)
-     
+
+  // ----- WORKAROUND FOR NOT STARTING BL-DRIVER (FORCE POWERCYCLE FOR RESTART) ------------
+  if (motor.reactivateBlockBlDriver) {
+    mow = false;
+    linear = 0;
+    angular = 0;            
+  }
+  
   if (mow)  {  // wait until mowing motor is running
     if (millis() < motor.motorMowSpinUpTime + MOW_SPINUPTIME){  // see config.h -> "MOW_SPINUPTIME"
       if (!buzzer.isPlaying()) buzzer.sound(SND_WARNING, true);
@@ -334,8 +341,8 @@ void trackLine(bool runControl){
     motor.setLinearAngularSpeed(linear, angular);      
     if (detectLift()) mow = false; // in any case, turn off mower motor if lifted 
     motor.setMowState(mow);    
-  } else{
-    if (USE_LINEAR_SPEED_RAMP && (linear == 0) && (motor.linearSpeedSet != 0)){ // linearSpeedSet Rampe abbauen
+  } /*else{
+    if (USE_LINEAR_SPEED_RAMP && (fabs(linear) < MOTOR_MIN_SPEED) && (motor.linearSpeedSet != 0)){ // linearSpeedSet Rampe abbauen
       CONSOLE.print("LineTracker.cpp  linear: ");
       CONSOLE.print(linear);
       CONSOLE.print(" linearSpeedSet: ");
@@ -343,7 +350,7 @@ void trackLine(bool runControl){
       motor.setLinearAngularSpeed(linear, angular);
     }
   }
-
+*/
   if (targetReached){
     if (maps.wayMode == WAY_MOW){
       maps.clearObstacles(); // clear obstacles if target reached
