@@ -1,4 +1,4 @@
-// Ardumower Sunray V1.0.287 SE - PLEASE HAVE A LOOK INTO "VERSIONINFO.MD" IN THE MAIN DIRECTORY FOR ADDED FEATURES AND DESCRIPTION
+// Ardumower Sunray V1.0.286 SE - PLEASE HAVE A LOOK INTO "VERSIONINFO.MD" IN THE MAIN DIRECTORY FOR ADDED FEATURES AND DESCRIPTION
 // Copyright (c) 2013-2020 by Alexander Grau, Grau GmbH
 // Licensed GPLv3 for open source use
 // or Grau GmbH Commercial License for commercial use (http://grauonline.de/cms2/?page_id=153)
@@ -173,6 +173,18 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 //#define MOTOR_DRIVER_BRUSHLESS_GEARS_A4931  1    // uncomment for brushless A4931 driver and gear/traction motors
 //#define MOTOR_DRIVER_BRUSHLESS_GEARS_BLDC8015A 1   // uncomment for brushless BLDC8015A driver and gear/traction motors
 //#define MOTOR_DRIVER_BRUSHLESS_GEARS_JYQD 1   // uncomment for brushless JYQD driver and gears/traction motor
+
+// ----- WORKAROUND FOR NOT STARTING BL-DRIVER (FORCE POWERCYCLE FOR RESTART) ------------
+#define REACTICATE_BL_DRIVER_AFTER_IDLE           false // powercycle for motor driver at start, if motor was switched off for more than REACTIVATE_IDLE_TIME
+#define REACTICATE_BL_DRIVER_AFTER_FAULT          false // powercycle for bl-driver if bl-driver send error signal (checkFault)
+#define REACTICATE_BL_DRIVER_AFTER_LOW_CURRENT    false // powercycle for bl-driver after too low current error (checkCurrentTooLowError)
+#define REACTICATE_BL_DRIVER_AFTER_HIGH_CURRENT   false // powercycle for bl-driver after too high current error (checkCurrentTooHighError)
+#define REACTICATE_BL_DRIVER_AFTER_RPM_FAULT      false // powercycle for bl-driver after rpm fault detection (checkMowRpmFault)
+#define REACTICATE_BL_DRIVER_AFTER_ODOMETRY_ERROR false // powercycle for bl-driver after odometry error (checkOdometryError)
+
+#define REACTIVATE_IDLE_TIME          10  // duration in minutes the drivers have to stay in IDLE to performe a short powercycle if drivers have to start again.
+#define REACTIVATE_SWITCH_OFF_TIME  3000  // duration in ms the drivers stay without power
+//----- END WORKAROUND --------------------------------------------------------------------
 
 #define MOTOR_FAULT_CURRENT 3.0    // gear motors fault current (amps)
 #define MOTOR_OVERLOAD_CURRENT 0.8    // gear motors overload current (amps)
