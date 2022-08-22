@@ -504,7 +504,11 @@ void Motor::run() {
         pinMode(pinUserSwitch3, OUTPUT);
         digitalWrite(pinUserSwitch3, true);
         reactivateByMotorFault    = false;
-        swBlDriverReactivation   = 1;
+        if (REACTICATE_BL_DRIVER_AFTER_IDLE) {
+          CONSOLE.println("WORKAROUND REACTIVATE_MOWDRIVER triggered due reboot.");
+          swBlDriverReactivation   = 10; // force a powercycle after first start
+        }
+        else swBlDriverReactivation   = 1;
         break;
       
       case 1: // check conditions for powercycle
