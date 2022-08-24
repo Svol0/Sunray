@@ -182,7 +182,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define REACTICATE_BL_DRIVER_AFTER_RPM_FAULT      false // powercycle for bl-driver after rpm fault detection (checkMowRpmFault)
 #define REACTICATE_BL_DRIVER_AFTER_ODOMETRY_ERROR false // powercycle for bl-driver after odometry error (checkOdometryError)
 
-#define REACTIVATE_IDLE_TIME          10  // duration in minutes the drivers have to stay in IDLE to performe a short powercycle if drivers have to start again.
+#define REACTIVATE_IDLE_TIME          30  // duration in minutes the drivers have to stay in IDLE to performe a short powercycle if drivers have to start again.
 #define REACTIVATE_SWITCH_OFF_TIME  3000  // duration in ms the drivers stay without power
 //----- END WORKAROUND --------------------------------------------------------------------
 
@@ -481,9 +481,9 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
                                  //  1 beep=stop, 6 beeps=start, 5 beeps=dock, 3 beeps=R/C mode ON/OFF, 9 beeps=shutdown, 12 beeps=WiFi WPS
 //#define BUTTON_CONTROL false   // additional features deactivated
 
-//#define USE_TEMP_SENSOR 1   // only activate if temp sensor (htu21d) connected
+#define USE_TEMP_SENSOR false    // only activate if temp sensor (htu21d) connected
 #define DOCK_OVERHEAT_TEMP 90    // if temperature above this degreeC, mower will dock 
-#define DOCK_TOO_COLD_TEMP 5    // if temperature below this degreeC, mower will dock 
+#define DOCK_TOO_COLD_TEMP 5     // if temperature below this degreeC, mower will dock 
 
 // activate support for model R/C control?
 // use PCB pin 'mow' for R/C model control speed and PCB pin 'steering' for R/C model control steering, 
