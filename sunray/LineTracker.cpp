@@ -40,6 +40,14 @@ unsigned long dockGpsRebootFeedbackTimer; // Svol0: timer to generate acustic fe
 bool dockGpsRebootDistGpsTrg = false;     // Svol0: trigger to check solid gps-fix position (no jump)
 bool allowDockLastPointWithoutGPS = false;  // Svol0: allow go on docking by loosing gps fix
 bool warnDockWithoutGpsTrg = false;            // Svol0: Trigger for warnmessage
+float stateX_1 = 0;
+float stateY_1 = 0;
+float stateX_2 = 0;
+float stateY_2 = 0;
+float stateX_3 = 0;
+float stateY_3 = 0;
+int counterCheckPos = 0;  // check if gps position is reliable
+
 
 // control robot velocity (linear,angular) to track line to next waypoint (target)
 // uses a stanley controller for line tracking
@@ -247,7 +255,9 @@ void trackLine(bool runControl){
   }
 
   // reboot gps by undocking at a specified docking point (please see "DOCK_POINT_GPS_REBOOT" in config.h) //SOew
-  if (dockGpsRebootState > 0){   // status dockGpsReboot: 0= off, 1= reset gps, 2= wait for gps-fix, 3= check for stable gps-fix
+  if (dockGpsRebootState == 0){   // status dockGpsReboot: 0= off, 1= reset gps, 2= wait for gps-fix, 3= check for stable gps-fix
+    counterCheckPos = 0;
+  } else {
     switch (dockGpsRebootState){
       
       case 1:
@@ -286,10 +296,47 @@ void trackLine(bool runControl){
       case 3:
         // wait if gps-fix position stays stable for at least 20sec
         if ((gps.solution == SOL_FIXED) && (millis() - dockGpsRebootTime > 20000)){
-          dockGpsRebootState      = 0; // finished
-     //     blockKidnapByUndocking  = false;  // enable Kidnap detection
-      //    maps.setLastTargetPoint(stateX, stateY);  // Manipulate last target point to avoid "KIDNAP DETECT"
-          CONSOLE.println("LineTracker.cpp  dockGpsRebootState - gps-pos is stable; continue undocking/docking;");
+          // zur Sicherheit wird mind. 2 mal die Position kontrolliert
+          if (counterCheckPos < 3){
+            if (counterCheckPos == 0){
+              stateX_1 = stateX;
+              stateY_1 = stateY;
+              counterCheckPos += 1;
+              dockGpsRebootState = 1; // erneuten reboot einleiten
+              CONSOLE.print("LineTracker.cpp  1. gps-fix pos  x = ");
+              CONSOLE.print(stateX_1);
+              CONSOLE.print(" y = ");
+              CONSOLE.println(stateY_1);
+            } else if (counterCheckPos == 1){
+              stateX_2 = stateX;
+              stateY_2 = stateY;
+              counterCheckPos += 1;
+              if ((fabs(stateX_1 - stateX_2) <= 0.03) && (fabs(stateY_1 - stateY_2) <= 0.03)){
+                dockGpsRebootState = 4; // sicherer Fix
+              } else {
+                dockGpsRebootState = 1; // erneuten reboot einleiten              
+              }
+              CONSOLE.print("LineTracker.cpp  2. gps-fix pos  x = ");
+              CONSOLE.print(stateX_2);
+              CONSOLE.print(" y = ");
+              CONSOLE.println(stateY_2);
+           } else if (counterCheckPos == 2){
+              stateX_3 = stateX;
+              stateY_3 = stateY;
+              counterCheckPos += 1;
+              if (((fabs(stateX_1 - stateX_3) <= 0.03) && (fabs(stateY_1 - stateY_3) <= 0.03)) ||
+              ((fabs(stateX_2 - stateX_3) <= 0.03) && (fabs(stateY_2 - stateY_3) <= 0.03))){
+                dockGpsRebootState = 4; // sicherer Fix
+              } else {
+                counterCheckPos = 0;  // reset counter
+                dockGpsRebootState = 1; // erneuten reboot einleiten              
+              }
+              CONSOLE.print("LineTracker.cpp  3. gps-fix pos  x = ");
+              CONSOLE.print(stateX_3);
+              CONSOLE.print(" y = ");
+              CONSOLE.println(stateY_3);
+            }
+          }
         }
         if (gps.solution != SOL_FIXED) dockGpsRebootState = 2; // wait for gps-fix again
         if (dockGpsRebootDistGpsTrg == true){ // gps position is changing to much
@@ -305,7 +352,15 @@ void trackLine(bool runControl){
           if (!buzzer.isPlaying()) buzzer.sound(SND_READY, true);
         }
         break;
-        
+
+      case 4:
+          dockGpsRebootState      = 0; // finished
+     //     blockKidnapByUndocking  = false;  // enable Kidnap detection
+      //    maps.setLastTargetPoint(stateX, stateY);  // Manipulate last target point to avoid "KIDNAP DETECT"
+          CONSOLE.println("LineTracker.cpp  dockGpsRebootState - gps-pos is stable; continue undocking/docking;");
+      
+        break;  
+      
       case 10:
         // Wenn ohne GPS fix oder float das undocking gestartet wird, muss bei erreichen von fix oder float die "linearMotionStartTime" resetet werden, um "gps no speed => obstacle!" zu vermeiden
         resetLinearMotionMeasurement();
@@ -324,7 +379,7 @@ void trackLine(bool runControl){
   if (motor.reactivateBlockBlDriver) {
     mow = false;
     linear = 0;
-    angular = 0;            
+    angular = 0;
   }
   
   if (mow)  {  // wait until mowing motor is running
