@@ -356,19 +356,19 @@ void Motor::stopImmediately(bool includeMowerMotor){
 void Motor::run() {
   if (millis() < lastControlTime + 50) return;
 
-
+/*
     if ((stateOp == OP_IDLE) && ((abs(motorLeftPWMCurr) < 1) && (abs(motorRightPWMCurr) < 1) && (motor.linearSpeedSet != 0))){ // linearSpeedSet Rampe abbauen
       linearSpeedSet = 0;
       angularSpeedSet = 0;
-/*    
+    
       CONSOLE.print("motor.cpp  linearSpeedSet: ");
       CONSOLE.print(linearSpeedSet);
       CONSOLE.print(" angularSpeedSet: ");
       CONSOLE.println(angularSpeedSet);
-*/      
+      
       motor.setLinearAngularSpeed(0,0);
     }
-
+*/
   // ----- WORKAROUND FOR NOT STARTING BL-DRIVER (FORCE POWERCYCLE FOR RESTART) ------------
   if (REACTICATE_BL_DRIVER_AFTER_IDLE || REACTICATE_BL_DRIVER_AFTER_FAULT || REACTICATE_BL_DRIVER_AFTER_LOW_CURRENT
       || REACTICATE_BL_DRIVER_AFTER_HIGH_CURRENT || REACTICATE_BL_DRIVER_AFTER_RPM_FAULT || REACTICATE_BL_DRIVER_AFTER_ODOMETRY_ERROR) {
@@ -389,7 +389,11 @@ void Motor::run() {
           //if (((motor.enableMowMotor) && (mowMotorSwitchedOn)) && (motor.motorMowPWMSet > 5 || motor.motorMowPWMSet < -5)) BlDriverStopTimer = millis(); // is running
           if (abs(motorLeftPWMCurr) > 5 || abs(motorRightPWMCurr) > 5 || abs(motorMowPWMCurr) > 5) BlDriverStopTimer = millis(); // is running
           else if (millis() > (BlDriverStopTimer + (REACTIVATE_IDLE_TIME * 60000))) {
-            CONSOLE.println("WORKAROUND REACTIVATE_MOWDRIVER triggered due motor stop longer than 10min.");
+            CONSOLE.print("WORKAROUND REACTIVATE_MOWDRIVER triggered due motor stop longer than ");
+            CONSOLE.print(REACTIVATE_IDLE_TIME);
+            CONSOLE.println("min.");
+            stopImmediately(true);
+            reactivateLinear  = 0;
             swBlDriverReactivation = 10;
           }                      
         }
@@ -404,6 +408,8 @@ void Motor::run() {
             nextRecoverMotorFaultTime = millis() + 1000;  // Reset timer for motor Recovery Timer
             reactivateByMotorFault    = true;
             reactivateBlockBlDriver   = true;
+            stopImmediately(true);
+            reactivateLinear  = 0;
             swBlDriverReactivation    = 2;
           }            
         }
@@ -431,6 +437,8 @@ void Motor::run() {
         if (reactivateByMotorFault) nextRecoverMotorFaultTime = millis() + 1000;  // Reset timer for motor Recovery Timer
         if (abs(reactivateLinear) > (MOTOR_MIN_SPEED / 2) || (stateOp == OP_MOW)) {
           CONSOLE.println("WORKAROUND REACTIVATE_MOWDRIVER switch power off.");
+CONSOLE.print("reactivateLinear: ");
+CONSOLE.println(reactivateLinear);
           BlDriverStopTimer = millis();
           digitalWrite(pinUserSwitch3, false);
           swBlDriverReactivation = 11;
@@ -455,6 +463,8 @@ void Motor::run() {
           CONSOLE.println("WORKAROUND REACTIVATE_BL-DRIVER start motors again.");
           reactivateBlockBlDriver = false;
           reactivateByMotorFault    = false;
+          stopImmediately(true);
+
           BlDriverStopTimer = millis();
           swBlDriverReactivation = 1;
         }

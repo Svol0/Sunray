@@ -211,7 +211,10 @@ void cmdMotor(){
   CONSOLE.print(linear);
   CONSOLE.print(" angular=");
   CONSOLE.println(angular);*/
-  motor.setLinearAngularSpeed(linear, angular, false);
+  // ----- WORKAROUND FOR NOT STARTING BL-DRIVER (FORCE POWERCYCLE FOR RESTART) ------------
+  if (motor.reactivateBlockBlDriver) {
+    reactivateLinear = linear;
+  } else motor.setLinearAngularSpeed(linear, angular, false);
   String s = F("M");
   cmdAnswer(s);
 }
