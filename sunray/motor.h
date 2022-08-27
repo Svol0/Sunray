@@ -12,6 +12,7 @@
 // selected motor
 enum MotorSelect {MOTOR_LEFT, MOTOR_RIGHT, MOTOR_MOW} ;
 typedef enum MotorSelect MotorSelect;
+extern float reactivateLinear;
 
 
 class Motor {
