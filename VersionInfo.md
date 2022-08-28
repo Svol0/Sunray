@@ -30,12 +30,12 @@ Am Anfang der Tests hatte ich den Step-Down-Regler noch nicht dazwischen, was da
 
 Daher gilt (wie eigentlich immer): TESTEN AUF EIGENE GEFAHR!!!
 
-**Benötigtes Material:**
-1 x 5V Relais für Arduino
-1 x Step-Down Regler für mind. 35V und 5A oder vermutlich noch besser einen Step-Up Regler für min. 35V 5A
-1 x 470 Ohm Widerstand 2 Watt oder 4 Widerstände a 2,2 kOhm 0,6 Watt
-1m 0,5mm² Kupferlitze
-1 x Anschlusskabel mit 5pol. XH-Stecker
+**Benötigtes Material:**  
+1 x 5V Relais für Arduino  
+1 x Step-Down Regler für mind. 35V und 5A oder vermutlich noch besser einen Step-Up Regler für min. 35V 5A  
+1 x 470 Ohm Widerstand 2 Watt oder 4 Widerstände a 2,2 kOhm 0,6 Watt  
+1m 0,5mm² Kupferlitze  
+1 x Anschlusskabel mit 5pol. XH-Stecker  
 
 Zum Programmablauf:
 
@@ -45,14 +45,22 @@ Ist der Parameter "REACTICATE_BL_DRIVER_AFTER_IDLE" auf "true", so wird ein Neus
 
 Der gleiche Ablauf erfolgt auch, wenn einer der möglichen Motorfehler auftritt und dieser in der Konfiguration auf "true" gesetzt ist. Es wird dann gewartet, bis bei allen das PWM-Ausgangssignal nahe NULL ist, bevor der Neustart erfolgt.  
 Folgende Parameter stehen in der config.h zur Verfügung:  
-**REACTICATE_BL_DRIVER_AFTER_IDLE**: Wenn auf **true** wird ein Neustart der Treiber durchgeführt, wenn die Motoren für die unter **REACTIVATE_IDLE_TIME** eingestellte Zeit in Minuten still standen.  
-**REACTICATE_BL_DRIVER_AFTER_FAULT**: Wenn auf **true** wird ein Neustart der Treiber durchgeführt, wenn die BL-Treiber einen Fehler melden  
-**REACTICATE_BL_DRIVER_AFTER_LOW_CURRENT**: Wenn auf **true** wird ein Neustart der Treiber durchgeführt, wenn der Fehler "too low current error" auftritt  
-**REACTICATE_BL_DRIVER_AFTER_HIGH_CURRENT**: Wenn auf **true** wird ein Neustart der Treiber durchgeführt, wenn der Fehler "too high current error" auftritt  
-**REACTICATE_BL_DRIVER_AFTER_RPM_FAULT**: Wenn auf **true** wird ein Neustart der Treiber durchgeführt, wenn der Fehler "rpm fault detection" auftritt  
-**REACTICATE_BL_DRIVER_AFTER_ODOMETRY_ERROR**: Wenn auf **true** wird ein Neustart der Treiber durchgeführt, wenn der Fehler "odometry error" auftritt  
-**REACTIVATE_IDLE_TIME**: Wartezeit in Minuten, die alle Motoren im Stillstand sein müssen, damit der Neustart der Teiber durchgeführt wird  
-**REACTIVATE_SWITCH_OFF_TIME**: Unterbrechungsdauer der Spannungsversorgung für die BL-Treiber. Sollte so gewählt werden, dass die Treiber sicher unter einer Spannung von 2Volt sind.  
+- **REACTICATE_BL_DRIVER_AFTER_IDLE**:  
+Wenn auf **true** wird ein Neustart der Treiber durchgeführt, wenn die Motoren für die unter **REACTIVATE_IDLE_TIME** eingestellte Zeit in Minuten still standen.  
+- **REACTICATE_BL_DRIVER_AFTER_FAULT**:  
+Wenn auf **true** wird ein Neustart der Treiber durchgeführt, wenn die BL-Treiber einen Fehler melden  
+- **REACTICATE_BL_DRIVER_AFTER_LOW_CURRENT**:  
+Wenn auf **true** wird ein Neustart der Treiber durchgeführt, wenn der Fehler "too low current error" auftritt  
+- **REACTICATE_BL_DRIVER_AFTER_HIGH_CURRENT**:  
+Wenn auf **true** wird ein Neustart der Treiber durchgeführt, wenn der Fehler "too high current error" auftritt  
+- **REACTICATE_BL_DRIVER_AFTER_RPM_FAULT**:  
+Wenn auf **true** wird ein Neustart der Treiber durchgeführt, wenn der Fehler "rpm fault detection" auftritt  
+- **REACTICATE_BL_DRIVER_AFTER_ODOMETRY_ERROR**:  
+Wenn auf **true** wird ein Neustart der Treiber durchgeführt, wenn der Fehler "odometry error" auftritt  
+- **REACTIVATE_IDLE_TIME**:  
+Wartezeit in Minuten, die alle Motoren im Stillstand sein müssen, damit der Neustart der Teiber durchgeführt wird  
+- **REACTIVATE_SWITCH_OFF_TIME**:  
+Unterbrechungsdauer der Spannungsversorgung für die BL-Treiber. Sollte so gewählt werden, dass die Treiber sicher unter einer Spannung von 2Volt sind.  
 
 ---
 ### Geänderte LINEAR_RAMP
