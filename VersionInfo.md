@@ -6,15 +6,17 @@
 Hierfür ist eine Hardwareanpassung erforderlich!  
 Der Workaround besteht aus einem Relais, einem Step-Down-Regler, einem 470 Ohm 2Watt Widerstand, ein paar Kabeln, einem Anschlusskabel mit 5pol. XH-Stecker und etwas Software.
 
+[![Wireing for Workaround](/doc/PowerCycleBL_driver.jpg)]
+
 Die Spannungsversorgung der BL-Treiber wird, wenn diese längere Zeit nicht angesteuert wurden, für einen kurzen Moment durch den Relais-Kontakt getrennt und über den Widerstand entladen.
 
 Dafür ist die gekennzeichnete Leiterbahn bei P49 auf der Rückseite des PCB 1.4 zu unterbrechen. Den speisenden Plus vom P49 auf den positiven Eingang am Strombegrenzer (ist ein Step Downregler mit Strombegrenzung 5A) angeschlossen (Dieser sollte, da die Ausgangsspannung meistens 2V kleiner als die Eingangsspannung ist, voll aufgedreht werden, damit die Treiber genügend Spannung zur Verfügung haben um ordnungsgemäß Arbeiten zu können). 
 
 Ein Step-Up Regler wäre wahrscheinlich die besser Wahl, aber leider hatte ich bisher noch keinen. Der Vorteil wäre, dass die Versorgungsspannung für die Treiber annähernd auf konstantem Level gehalten werden würde. 
 
-Bei der Verwendung eines Step-Up Reglers muss man aber unbedingt vor anschließen der Treiber die Ausgangsspannung auf einen zulässigen Wert (bei dem Standard Ardumower mit BL-Antrieben 28V) einstellen!!!
+Bei der Verwendung eines Step-Up Reglers muss man aber unbedingt vor Anschluss der Verbindungsleitung zwischen dem COM des Relais und dem linken Kontakt von P49 die Ausgangsspannung auf einen zulässigen Wert (bei dem Standard Ardumower mit BL-Antrieben 28V) einstellen!!!
 
-Masse vom P43 geholt (Draht mit unter die Minus-Klemme) für den Step Downregler. Positiver Ausgang des Reglers auf den Öffner vom Relais. Den Gemeinsamen vom Relais zurück auf den anderen Kontakt von P49.
+Die Masse kann vom P43 geholt (Draht mit unter die Minus-Klemme) für den Step Downregler. Positiver Ausgang des Reglers auf den Öffner vom Relais. Den Gemeinsamen vom Relais zurück auf den anderen Kontakt von P49.
 
 Den Schließer vom Relais mit einem 470 Ohm 2Watt Widerstand gegen Masse als Entladewiderstand anklemmen. Das Relais wird über den UserSwitch3 angesteuert.
 
@@ -28,7 +30,7 @@ Am Anfang der Tests hatte ich den Step-Down-Regler noch nicht dazwischen, was da
 
 Daher gilt (wie eigentlich immer): TESTEN AUF EIGENE GEFAHR!!!
 
-Benötigtes Material:
+**Benötigtes Material:**
 1 x 5V Relais für Arduino
 1 x Step-Down Regler für mind. 35V und 5A oder vermutlich noch besser einen Step-Up Regler für min. 35V 5A
 1 x 470 Ohm Widerstand 2 Watt oder 4 Widerstände a 2,2 kOhm 0,6 Watt
